@@ -82,23 +82,24 @@ export async function graphqlQuery<T>(
 
 /**
  * Download TX JSON from the first data gateway that returns 200.
- * 404 on a live gateway means the TX is not there — returns null.
- * Only throws when every host failed at the network layer.
+ * Only unanimous 404 responses establish absence. A 5xx, timeout or malformed
+ * response must not turn an existing vault into an empty one during publishing.
  */
 export async function fetchTxJson(txId: string): Promise<unknown | null> {
   const id = encodeURIComponent(txId);
-  let sawHttp = false;
+  let failed = false;
+  let lastStatus: number | null = null;
   for (const base of DATA_GATEWAYS) {
     try {
       const res = await fetchWithTimeout(`${base}/${id}`);
-      sawHttp = true;
+      lastStatus = res.status;
       if (res.status === 404) continue;
-      if (!res.ok) continue;
+      if (!res.ok) { failed = true; continue; }
       return await res.json();
     } catch {
-      /* next host */
+      failed = true;
     }
   }
-  if (!sawHttp) throw new GatewayUnavailableError(GATEWAY_DOWN_RU);
+  if (failed) throw new GatewayUnavailableError(GATEWAY_DOWN_RU, lastStatus);
   return null;
 }

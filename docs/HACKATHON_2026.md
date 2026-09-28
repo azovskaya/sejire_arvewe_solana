@@ -1,6 +1,6 @@
 # SEJIRE: Crypto World's Fair preparation
 
-Research date: 2026-09-28. Status: proposed implementation scope; no contest application submitted and no Solana payment integration implemented yet.
+Research date: 2026-09-28. Status: first Solana/devnet implementation is in development; no contest application submitted. See SOLANA_PRESERVATION.md for verified and outstanding checks.
 
 ## Provenance
 
@@ -11,7 +11,7 @@ Import commit here: 37a1a230934e0bbd9cecb2beb4531c542ab1b5a4.
 Exact imported tree: f2d8a4b42e0e628360a72fcb6180e3f98d70e19b.
 The original repository retains the full history, including work before and during September 2026. Disclose it in the application. Track new work after this baseline separately; importing files is not new product development.
 
-Existing features include a genealogy editor, PDF/JSON export, browser encryption and recovery, Arweave envelopes, AO code, and a mock/Kaspi payment service. Solana payments are absent from the inspected implementation. Deployment readiness must be tested separately from source-code availability.
+Existing features include a genealogy editor, PDF/JSON export, browser encryption and recovery, Arweave envelopes, AO code, and a mock/Kaspi payment service. Solana payments were absent from the imported baseline; the new browser-wallet flow is tracked separately. Deployment readiness must be tested separately from source-code availability.
 
 ## Contest selection
 
@@ -52,7 +52,7 @@ This may avoid operating an additional payment cashier for the first demo. Verif
 Alternative: USDC on Solana via Solana Pay plus the existing upload service:
 https://docs.solanapay.com/spec
 https://solana.com/docs/payments/accept-payments
-This offers a stable displayed price but requires server-side verification and reconciliation. Do not assume Turbo directly accepts Solana USDC: its current payment matrix lists SOL/ARIO for Solana; USDC entries use other networks.
+This offers a stable displayed price but requires server-side verification and reconciliation. The inspected SDK 2.1.0 also exposes solana-usdc, while the documentation matrix inspected earlier lagged behind that capability. Neither path was validated end to end here; the implemented slice deliberately uses SOL.
 
 Choose one complete payment path for the first release, not both. If direct Turbo succeeds, prioritize that integration. Add merchant USDC only if user validation and time justify its operational cost.
 

@@ -1,7 +1,7 @@
 name: Deploy SEJIRE to gh-pages
 
 # Publishes apps/web build to the gh-pages branch of THIS repository.
-# GitHub Pages serves: https://azovskaya.github.io/Sejire_arweave/
+# GitHub Pages target: https://azovskaya.github.io/sejire_arvewe_solana/
 # Does not upload to Arweave.
 
 on:
@@ -36,10 +36,12 @@ jobs:
       - name: Build
         working-directory: apps/web
         env:
-          VITE_PUBLISH_MODE: self
-          VITE_QA_TOOLS: "1"
+          VITE_PUBLISH_MODE: solana
+          VITE_SOLANA_NETWORK: devnet
+          VITE_QA_TOOLS: "0"
         run: |
           npm ci
+          npm test
           npm run build
       - name: Keep presentation from previous gh-pages
         run: |

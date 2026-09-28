@@ -1,0 +1,28 @@
+name: SEJIRE checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - run: npm test
+      - run: npm run web:build
+        env:
+          VITE_PUBLISH_MODE: solana
+          VITE_SOLANA_NETWORK: devnet
+      - name: Dependency report (release review required)
+        run: npm audit --prefix apps/web --omit=dev || true

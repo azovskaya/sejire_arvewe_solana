@@ -1,5 +1,5 @@
 import type { EnvelopeV1 } from "../crypto/encrypt";
-import { fetchTxJson, graphqlQuery, isGatewayUnavailable } from "./gateways";
+import { fetchTxJson, GatewayUnavailableError, graphqlQuery, isGatewayUnavailable } from "./gateways";
 
 export { GatewayUnavailableError, isGatewayUnavailable } from "./gateways";
 
@@ -85,7 +85,8 @@ export async function listVaultVersions(
     vaultId,
     limit,
   });
-  return mapVaultVersionEdges(data.transactions?.edges ?? []);
+  if (!Array.isArray(data.transactions?.edges)) throw new GatewayUnavailableError();
+  return mapVaultVersionEdges(data.transactions.edges);
 }
 
 /**

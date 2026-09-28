@@ -4,7 +4,7 @@ import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
 import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
 import type { EnvelopeV1 } from "../lib/crypto/encrypt";
 import { parseSeedBackup } from "../lib/crypto/seedBackup";
-import { openEnvelope, openLocalVault, type VaultV1 } from "../lib/crypto/vault";
+import { openEnvelope, openLocalVault, sealVault, type VaultV1 } from "../lib/crypto/vault";
 import {
   fetchVaultEnvelope,
   formatVersionWhen,
@@ -63,6 +63,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (!ok) return;
     }
     const selfId = pickHomeFocus(store.draft, null);
+    // Preserve every tree in an imported/network vault, not only the active tree
+    // displayed by the editor. A later offline save must retain the full archive.
+    await sealVault(deriveKeysFromMnemonic(opts.mnemonic), vault);
     saveDraftTree(store);
     saveGuide({ ...defaultGuide(), step: "done", selfId });
     setVaultSession(

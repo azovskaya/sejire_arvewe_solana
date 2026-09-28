@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import react from "@vitejs/plugin-react";
 
 /** ArNS path manifests treat 404.html as SPA fallback (trailing-slash / deep links). */
@@ -21,12 +22,10 @@ function spaFallback404(): Plugin {
 
 export default defineConfig({
   base: "./",
-  plugins: [react(), spaFallback404()],
+  plugins: [react(), nodePolyfills({ globals: { Buffer: true, global: true, process: true } }), spaFallback404()],
   resolve: {
     // Prefer browser build; node entry breaks Vite CJS default interop (.init).
-    alias: {
-      arweave: "arweave/web/index.js",
-    },
+    alias: [{ find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
   },
   optimizeDeps: {
     include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes"],

@@ -41,3 +41,14 @@ assert(formatVersionWhen(edges[1]).length > 0, "formats block time");
 assert(formatVersionWhen(edges[2]) === "время неизвестно", "unknown when");
 
 console.log("fetch.selftest: OK", { versions: edges.length });
+
+// A malformed GraphQL success response cannot establish an empty archive.
+const originalFetchForShape = globalThis.fetch;
+try {
+  const { listVaultVersions } = await import('./fetch');
+  const { isGatewayUnavailable } = await import('./gateways');
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: {} }), { status: 200 });
+  let refused = false;
+  try { await listVaultVersions('synthetic-vault'); } catch(e) { refused = isGatewayUnavailable(e); }
+  assert(refused, 'missing transactions must not become an empty vault');
+} finally { globalThis.fetch = originalFetchForShape; }
