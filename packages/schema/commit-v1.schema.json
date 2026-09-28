@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/commit/v1.json",
+  "title": "SEJIRE Commit",
+  "description": "Immutable family-tree snapshot. Each addition creates a new commit; history is never erased.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "tree_id", "commit_id", "version", "snapshot"],
+  "properties": {
+    "schema": { "const": "sejire/commit/v1" },
+    "tree_id": { "type": "string" },
+    "commit_id": { "type": "string" },
+    "parent_commit_id": { "type": ["string", "null"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "author": { "type": "string" },
+    "created_at": { "type": "string" },
+    "message": { "type": "string" },
+    "snapshot": {
+      "type": "object",
+      "required": ["persons"],
+      "properties": {
+        "persons": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/person" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "person": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "born": { "type": ["string", "null"] },
+        "died": { "type": ["string", "null"] },
+        "place": {
+          "type": ["object", "null"],
+          "properties": {
+            "lat": { "type": "number" },
+            "lon": { "type": "number" },
+            "label": { "type": "string" }
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tx"],
+            "properties": {
+              "tx": { "type": "string", "description": "Arweave transaction ID" },
+              "kind": { "enum": ["image", "document", "audio", "other"] },
+              "caption": { "type": "string" }
+            }
+          }
+        },
+        "notes": { "type": "string" },
+        "tombstone": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

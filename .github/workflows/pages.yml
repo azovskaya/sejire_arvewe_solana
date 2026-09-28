@@ -1,0 +1,63 @@
+name: Deploy SEJIRE to gh-pages
+
+# Publishes apps/web build to the gh-pages branch of THIS repository.
+# GitHub Pages serves: https://azovskaya.github.io/Sejire_arweave/
+# Does not upload to Arweave.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "presentation/**"
+      - ".github/workflows/pages.yml"
+      - "scripts/deploy-pages.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Build
+        working-directory: apps/web
+        env:
+          VITE_PUBLISH_MODE: self
+          VITE_QA_TOOLS: "1"
+        run: |
+          npm ci
+          npm run build
+      - name: Keep presentation from previous gh-pages
+        run: |
+          mkdir -p apps/web/dist/presentation apps/web/dist/qa-13gen
+          git fetch origin gh-pages || true
+          git archive origin/gh-pages presentation 2>/dev/null | tar -x -C apps/web/dist || true
+          git archive origin/gh-pages qa-13gen 2>/dev/null | tar -x -C apps/web/dist || true
+          if [ -d presentation ]; then cp -a presentation/. apps/web/dist/presentation/; fi
+          if [ -d artifacts/qa-13gen ]; then
+            mkdir -p apps/web/dist/qa-13gen
+            cp -a artifacts/qa-13gen/. apps/web/dist/qa-13gen/
+            rm -rf apps/web/dist/qa-13gen/live-arns 2>/dev/null || true
+          fi
+          touch apps/web/dist/.nojekyll
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apps/web/dist
+          force_orphan: true
+          enable_jekyll: false

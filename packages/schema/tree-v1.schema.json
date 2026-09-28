@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/tree/v1.json",
+  "title": "SEJIRE Tree Commit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "tree_id", "persons"],
+  "properties": {
+    "schema": { "const": "sejire/tree/v1" },
+    "tree_id": { "type": "string", "minLength": 8 },
+    "parent_tx": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "persons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/person" }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "encrypted": { "type": "boolean" },
+        "cipher": { "type": "string" },
+        "kdf": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "person": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "born": { "type": ["string", "null"] },
+        "died": { "type": ["string", "null"] },
+        "place": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lon": { "type": "number" }
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

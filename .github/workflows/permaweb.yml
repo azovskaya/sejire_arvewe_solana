@@ -1,0 +1,41 @@
+name: Upload SEJIRE SPA to Arweave (manual)
+
+# Never runs on push. Does not change ArNS / Phantom Target ID.
+# Owner: GitHub → Actions → this workflow → Run → confirm = pack-ready
+# Secret: PERMAWEB_JWK = Wander/ArConnect keyfile JSON (treasury, not user 12 words)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type pack-ready to upload (does not bind sejire.ar.io)"
+        required: true
+        type: string
+
+jobs:
+  permaweb:
+    if: github.event.inputs.confirm == 'pack-ready'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Require treasury wallet secret
+        env:
+          PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
+        run: |
+          if [ -z "$PERMAWEB_JWK" ]; then
+            echo "::error::Add GitHub Actions secret PERMAWEB_JWK (Wander keyfile JSON). Never commit wallet.json."
+            exit 1
+          fi
+      - name: Install root tooling
+        run: npm ci
+      - name: Upload SPA via Turbo
+        env:
+          PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
+        run: npm run deploy:permaweb
+      - name: Wipe wallet file if present
+        if: always()
+        run: rm -f wallet.json

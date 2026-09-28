@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/envelope/v1.json",
+  "title": "SEJIRE Vault Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "vault_id", "cipher", "kdf", "iv", "ciphertext", "protocol"],
+  "properties": {
+    "schema": { "const": "sejire/envelope/v1" },
+    "vault_id": { "type": "string", "minLength": 16 },
+    "cipher": { "const": "aes-gcm-256" },
+    "kdf": { "const": "hkdf-sha256" },
+    "iv": { "type": "string" },
+    "ciphertext": { "type": "string" },
+    "protocol": { "const": "sejire/v0.3" }
+  }
+}

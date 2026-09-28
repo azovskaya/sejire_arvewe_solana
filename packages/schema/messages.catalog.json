@@ -1,0 +1,45 @@
+{
+  "protocol": "sejire/v0.3",
+  "processes": {
+    "tree": {
+      "code": "ao/processes/tree.lua",
+      "doc": "docs/processes/TREE.md",
+      "actions": [
+        "Ping",
+        "Info",
+        "Init",
+        "Commit",
+        "GetHead",
+        "GetCommit",
+        "History",
+        "AddOwner",
+        "RemoveOwner",
+        "GetAncestors",
+        "GetJetiAta",
+        "Relate"
+      ]
+    },
+    "factory": {
+      "code": "ao/processes/factory.lua",
+      "doc": "docs/processes/FACTORY.md",
+      "actions": ["Ping", "Info", "SpawnTree", "RegisterTree", "ListTrees"]
+    }
+  },
+  "errors": [
+    "AlreadyInitialized",
+    "Unauthorized",
+    "BadPayload",
+    "BadSnapshot",
+    "StaleParent",
+    "NotFound",
+    "BadAddress",
+    "LastOwner",
+    "BadProcessId",
+    "EmptyTree",
+    "BadPersonId"
+  ],
+  "app_tags": {
+    "App-Name": "SEJIRE",
+    "Protocol": "sejire/v0.3"
+  }
+}

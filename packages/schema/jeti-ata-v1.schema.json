@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/jeti-ata/v1.json",
+  "title": "SEJIRE GetJetiAta response",
+  "description": "Paternal line, focus at generation 0, up to 7 people (SPA pedigree depth).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "person_id", "commit_id", "max", "complete", "line"],
+  "properties": {
+    "schema": { "const": "sejire/jeti-ata/v1" },
+    "person_id": { "type": "string" },
+    "commit_id": { "type": "string" },
+    "max": { "const": 7 },
+    "complete": { "type": "boolean" },
+    "line": {
+      "type": "array",
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": ["generation", "id", "name"],
+        "properties": {
+          "generation": { "type": "integer", "minimum": 0, "maximum": 6 },
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "sex": { "type": "string" },
+          "born": { "type": ["string", "null"] },
+          "died": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

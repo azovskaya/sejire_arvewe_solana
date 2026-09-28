@@ -1,0 +1,24 @@
+{
+  "name": "sejire",
+  "private": true,
+  "version": "0.3.0",
+  "description": "SEJIRE — versioned decentralized genealogy on Arweave + AO",
+  "scripts": {
+    "present": "python3 -m http.server 4173 --directory .",
+    "deck:pptx": "node presentation/build-pptx.mjs && node presentation/build-pptx-en.mjs",
+    "deck:pdf": "node presentation/print-pdf.mjs ru && node presentation/print-pdf.mjs en",
+    "deck": "npm run deck:pptx && npm run deck:pdf",
+    "web": "npm run dev --prefix apps/web",
+    "web:build": "npm run build --prefix apps/web",
+    "sponsor:test": "npm test --prefix apps/sponsor",
+    "test": "npm test --prefix apps/web && npm test --prefix apps/sponsor",
+    "treasury:init": "node apps/sponsor/scripts/init-treasury.mjs",
+    "deploy:pages": "bash scripts/deploy-pages.sh",
+    "deploy:permaweb": "bash scripts/deploy-permaweb.sh",
+    "web:build:arns": "VITE_PUBLISH_MODE=self npm run build --prefix apps/web"
+  },
+  "devDependencies": {
+    "permaweb-deploy": "^5.0.0",
+    "pptxgenjs": "^4.0.1"
+  }
+}

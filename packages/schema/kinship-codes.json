@@ -1,0 +1,16 @@
+{
+  "codes": [
+    "self",
+    "child",
+    "parent",
+    "grandchild",
+    "grandparent",
+    "sibling",
+    "nibling",
+    "pibling",
+    "cousin",
+    "related",
+    "unrelated"
+  ],
+  "note": "Relate Action returns `code`. The label is A relative to B (da = steps from A to LCA, db = steps from B to LCA)."
+}

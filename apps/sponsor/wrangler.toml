@@ -1,0 +1,34 @@
+name = "sejire-sponsor"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PAYMENT_PROVIDER = "mock"
+PUBLISH_PRICE_MINOR = "1500"
+PUBLISH_CURRENCY = "KZT"
+MAX_ENVELOPE_BYTES = "524288"
+# Comma-separated; include local Vite when developing
+APP_ORIGIN = "https://azovskaya.github.io,https://sejire.ar.io,http://localhost:5173,http://127.0.0.1:5173"
+# Optional live Kaspi (defaults in Worker if unset):
+# KASPI_API_BASE = "https://pay.kaspi.kz/api/v2"
+# KASPI_TRADE_POINT_ID = "from-kaspi-cabinet"
+
+# Keys, Kaspi token, treasury JWK and admin password are entered at /admin
+# after deploy (stored in KV). Optional claim-guard for the first visit:
+# SETUP_PIN = "only-for-first-setup"
+
+# Legacy wrangler secrets still work as fallback (do not commit):
+#   npx wrangler secret put KASPI_MERCHANT_TOKEN
+#   npx wrangler secret put TURBO_JWK
+#   npx wrangler secret put ADMIN_TOKEN
+# Optional:
+#   npx wrangler secret put OPS_SALT
+# Public treasury address (safe; also derived from JWK in /admin):
+# TREASURY_ADDRESS = "arweave-address-from-treasury-init"
+
+# Required in production so /admin keys survive worker restarts:
+# [[kv_namespaces]]
+# binding = "IDEMPOTENCY"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"
+# preview_id = "REPLACE_WITH_KV_PREVIEW_ID"

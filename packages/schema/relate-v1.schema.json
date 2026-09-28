@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/relate/v1.json",
+  "title": "SEJIRE Relate response",
+  "description": "Kinship of Person-A relative to Person-B on a commit snapshot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "a", "b", "commit_id", "code"],
+  "properties": {
+    "schema": { "const": "sejire/relate/v1" },
+    "a": { "type": "string" },
+    "b": { "type": "string" },
+    "commit_id": { "type": "string" },
+    "lca": { "type": "string" },
+    "da": { "type": "integer", "minimum": 0 },
+    "db": { "type": "integer", "minimum": 0 },
+    "degree": { "type": "integer", "minimum": 0 },
+    "code": {
+      "enum": [
+        "self",
+        "child",
+        "parent",
+        "grandchild",
+        "grandparent",
+        "sibling",
+        "nibling",
+        "pibling",
+        "cousin",
+        "related",
+        "unrelated"
+      ]
+    }
+  }
+}

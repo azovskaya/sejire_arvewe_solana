@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/ancestors/v1.json",
+  "title": "SEJIRE GetAncestors response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "person_id", "commit_id", "ancestors"],
+  "properties": {
+    "schema": { "const": "sejire/ancestors/v1" },
+    "person_id": { "type": "string" },
+    "commit_id": { "type": "string" },
+    "ancestors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "distance"],
+        "properties": {
+          "id": { "type": "string" },
+          "distance": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

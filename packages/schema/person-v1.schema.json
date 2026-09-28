@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sejire.protocol/schemas/person/v1.json",
+  "title": "SEJIRE Person",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "name"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "born": { "type": ["string", "null"] },
+    "died": { "type": ["string", "null"] },
+    "place": {
+      "type": ["object", "null"],
+      "properties": {
+        "lat": { "type": "number" },
+        "lon": { "type": "number" },
+        "label": { "type": "string" }
+      }
+    },
+    "parents": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "media": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": ["tx"],
+        "properties": {
+          "tx": { "type": "string" },
+          "kind": { "enum": ["image", "document", "audio", "other"] },
+          "caption": { "type": "string" }
+        }
+      }
+    },
+    "notes": { "type": "string" },
+    "tombstone": { "type": "boolean", "default": false }
+  }
+}
