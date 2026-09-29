@@ -27,7 +27,7 @@ Sources: [Turbo SDK](https://docs.ar.io/sdks/turbo-sdk), [testnet uploads](https
 
 ## Configuration
 
-Copy `apps/web/.env.solana.example` to `.env.local` for local development. Environment values are public build-time configuration; never place secrets in `VITE_*` variables. The committed Pages workflow selects devnet and hides QA cashier navigation. Mainnet activation is intentionally explicit and has not been done.
+Use `npm run solana:dev` from the repository root for local development; `npm run solana:build` creates a production devnet build, and `npm run solana:check` runs offline tests, type checking, lint and that build. These macOS/Linux commands explicitly set the devnet environment without overwriting `.env.local`. `apps/web/.env.solana.example` remains a reference, not a file to copy over existing configuration blindly. Environment values are public build-time configuration; never place secrets in `VITE_*` variables. The committed Pages workflow selects devnet and hides QA cashier navigation. Mainnet activation is intentionally explicit and has not been done.
 
 ## Earlier verification (before the end-to-end changes below)
 
@@ -112,3 +112,19 @@ At this implementation checkpoint `npm audit` reports **0 critical, 8 high, 6 mo
 The complete multichain Turbo SDK generates a roughly 1.35 MB minified lazy chunk (about 440 KB gzip), alongside the existing large Arweave wallet chunk. Its polyfills produce a vm-browserify eval warning. Optimize or replace this dependency surface after the supported wallet flow is proven; do not silently ship an obsolete SDK just to reduce the audit count.
 
 Receipt persistence depends on browser storage availability. Browser data clearing can erase drafts, local encrypted archives and receipts. The local-copy warning system is inherited, and the encrypted file plus separately held recovery words remain necessary. A Turbo receipt does not itself contain the recovery key. Key rotation, family access control and encrypted local drafts are not implemented.
+
+## Additional verification before the second-Mac handoff
+
+September 29, unchanged application commit `4725b1e`: GitHub Actions run `36564863944` completed successfully, including real clean installs, tests and devnet build on Ubuntu/Node 22. Local full tests, sponsor type checking, production build and five additional Solana-suite repetitions passed. Lint still reports six warnings.
+
+One fresh live free upload produced `PnLfyAI2gfLB_S8DYcHY8hslLJuTDMVVwLJUWQQP6X4`, with one disposable software message signature and zero SOL transactions. Receipt replay and a duplicate real POST kept the same item ID. Gateway hash and decryption retained both trees, relationships and history. Production UI restored this receipt on a new origin after rejecting incorrect words. A real 2994-byte encrypted-file download was checked for ciphertext-only contents and original history, then restored on a separate origin; imported words did not discard the selected archive. The restored draft survived reload. JSON export and a one-page A4 PDF export passed; the PDF was rendered and visually inspected.
+
+Extra local diagnostics passed 10,000 integer money cases, 32 Unicode encryption/unique-IV roundtrips, ciphertext/wrong-key rejection, HTTP failure and abort cases, untrusted receipt URL isolation, 50 fake-IndexedDB concurrent writes with network isolation, and lock release after failure. These are not real-extension or real-browser multi-tab payment tests.
+
+Observed UX limitation: at 390 px, Fit clamps to scale 0.55 for an 832 px world and leaves the root card at x=-11.8 px. Current fit tests intentionally preserve the minimum scale; whole-document no-overflow is insufficient to prove cards fit. Two smaller messages omit a supported receipt format or refer to Open when the action is Restore archive. No app-code fixes were made in this test-only pass.
+
+UI JSON re-import was inconclusive: browser control timed out while setting the selected file and could not observe or close the test tab afterward. The import path calls window.confirm before replacing a populated draft; an automation/modal interaction is plausible but not established. Reproduce manually in Chrome. Export contents and JSON unit tests passed. The temporary mobile viewport override was reset.
+
+The latest production-only npm audit scope differs from the earlier full report: web has 0 critical, 8 high, 6 moderate and 10 low package entries; sponsor has none. Browser reachability is not comprehensively reviewed. No dependency auto-fix, downgrade, mainnet action or deployment was performed. Real wallet extension and owner-approved paid-devnet acceptance remain outstanding.
+
+The continuation package includes the [detailed test report](verification/2026-09-29-solana-report.md), [public devnet evidence without recovery words](verification/2026-09-29-devnet-evidence.json), [audit snapshot](verification/2026-09-29-web-production-audit.json), and [real-wallet acceptance checklist](SOLANA_WALLET_ACCEPTANCE.md). The portable `boundaries.selftest.ts` is now part of `npm test`/CI; it generates its own fixtures and never reads another Mac's files or contacts a gateway. This packaging adds tests, commands and documentation, not fixes for the observed UI limitations.

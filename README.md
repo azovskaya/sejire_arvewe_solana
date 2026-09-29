@@ -11,18 +11,28 @@ SEJIRE already includes a genealogy editor, ancestor views, PDF/JSON exports, th
 
 ## Run locally
 
-Requires Node.js 22+ and npm.
+Requires Node.js 22.12+ (or a compatible newer version) and npm. The commands below target macOS/Linux and explicitly select devnet without overwriting an existing `.env.local`.
 
 ```sh
 npm ci --prefix apps/web
 npm ci --prefix apps/sponsor
-cp apps/web/.env.solana.example apps/web/.env.local
-npm test
-npm run web:build
-npm run dev --prefix apps/web
+npm run solana:check
+npm run solana:dev
 ```
 
 Open the address printed by Vite. Create a tree without an account or payment wallet. Choose **Save**, create and confirm SEJIRE recovery words, then **Save with Solana**. Phantom or Solflare signs through its own interface. SEJIRE never asks for the payment wallet's recovery phrase.
+
+`solana:check` runs all offline tests, the sponsor type check, lint and a devnet production build. It makes no live upload or payment. `solana:dev` serves only `127.0.0.1:5173` and refuses an occupied port; it does not deploy. Keep that terminal running and open the URL in Chrome on the same Mac as the wallet extension. The complete setup still requires the two `npm ci` commands above, not an install at the repository root.
+
+## Solana continuation package
+
+- [Mac handoff and next steps](docs/CONTINUE_ON_ANOTHER_MAC.md)
+- [Real-wallet acceptance checklist and evidence template](docs/SOLANA_WALLET_ACCEPTANCE.md) — still NOT RUN with an actual extension
+- [September 29 test report and known issues](docs/verification/2026-09-29-solana-report.md)
+- [Public software-signer devnet evidence](docs/verification/2026-09-29-devnet-evidence.json) — zero SOL transfers, no private key or recovery phrase
+- [Production dependency audit snapshot](docs/verification/2026-09-29-web-production-audit.json) — unresolved findings, not a clean security certification
+
+The reproducible boundary tests are included in `npm test` and CI. Live network testing remains explicit and separate: `SEJIRE_LIVE_DEVNET=1 npm run test:solana:live --prefix apps/web`; it uploads only synthetic data and refuses SOL transfers. Do not consume the free quota repeatedly to force a paid test.
 
 The default Solana environment is **devnet**, using Turbo's test services. Test uploads are not permanent backups. Keep an encrypted file and the recovery words separately. Mainnet requires an explicit `VITE_SOLANA_NETWORK=mainnet-beta` build and completion of [acceptance checks](docs/SOLANA_PRESERVATION.md).
 
