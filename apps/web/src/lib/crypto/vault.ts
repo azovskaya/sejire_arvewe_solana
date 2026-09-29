@@ -3,6 +3,7 @@ import type { EnvelopeV1 } from "./encrypt";
 import { decryptJson, encryptJson } from "./encrypt";
 import type { SejireKeys } from "./keys";
 import { setLocalJson } from "../storageQuota";
+import { downloadJson } from "../download";
 
 export type VaultV1 = {
   schema: "sejire/vault/v1";
@@ -62,11 +63,5 @@ export async function openEnvelope(keys: SejireKeys, envelope: EnvelopeV1): Prom
 }
 
 export function downloadEnvelope(envelope: EnvelopeV1, filename?: string) {
-  const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename ?? `sejire-vault-${envelope.vault_id.slice(0, 8)}.json`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadJson(envelope, filename ?? `sejire-vault-${envelope.vault_id.slice(0, 8)}.json`);
 }

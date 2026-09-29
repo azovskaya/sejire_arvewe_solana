@@ -1,4 +1,5 @@
 import type { EnvelopeV1 } from "../crypto/encrypt";
+export { serializeEnvelope } from "../crypto/envelope";
 
 export type SolanaNetwork = "devnet" | "mainnet-beta";
 export type UploadQuote = {
@@ -20,24 +21,8 @@ export function networkConfig(network: SolanaNetwork) {
   };
 }
 
-/** Whitelist the encrypted envelope; never forward a whole tree or unknown fields. */
-export function serializeEnvelope(envelope: EnvelopeV1): string {
-  if (envelope.ciphertext?.length > 10 * 1024 * 1024) throw new Error("envelope_too_large");
-  const allowed = ["schema", "vault_id", "cipher", "kdf", "iv", "ciphertext", "protocol"];
-  if (Object.keys(envelope).some((key) => !allowed.includes(key)) ||
-      envelope.schema !== "sejire/envelope/v1" || envelope.cipher !== "aes-gcm-256" ||
-      envelope.kdf !== "hkdf-sha256" || envelope.protocol !== "sejire/v0.3" ||
-      !/^[a-f0-9]{32}$/.test(envelope.vault_id) ||
-      !/^[A-Za-z0-9+/]{16}$/.test(envelope.iv) ||
-      !/^[A-Za-z0-9+/]+={0,2}$/.test(envelope.ciphertext) ||
-      envelope.ciphertext.length % 4 !== 0 || envelope.ciphertext.length < 24) throw new Error("invalid_envelope");
-  const data = JSON.stringify(envelope);
-  if (new TextEncoder().encode(data).length > 10 * 1024 * 1024) throw new Error("envelope_too_large");
-  return data;
-}
-
-export async function envelopeDigest(data: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
+export async function envelopeDigest(data: string | Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data));
   return Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join("");
 }
 

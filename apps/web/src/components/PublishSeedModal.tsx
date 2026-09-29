@@ -268,21 +268,20 @@ export function PublishSeedModal({
     }
   }
 
-  function recordSolana(receipt: PreservationReceipt) {
-    if (!sealedEnvelope) return;
+  function recordSolana(receipt: PreservationReceipt, acceptedEnvelope: EnvelopeV1, acceptedParent: string | null) {
     const keys = deriveKeysFromMnemonic(mnemonic);
     const live = receipt.network === "mainnet-beta";
     if (live) {
-      archiveVersion(keys, sealedEnvelope, receipt.receipt.id, publishParentTx, "network");
+      archiveVersion(keys, acceptedEnvelope, receipt.receipt.id, acceptedParent, "network");
       rememberSession(keys, mnemonic, receipt.receipt.id);
       freshKey.current = false;
     }
   }
 
-  function finishSolana(receipt: PreservationReceipt) {
+  function finishSolana(receipt: PreservationReceipt, acceptedParent: string | null) {
     const live = receipt.network === "mainnet-beta";
     onPublished({ mode: live ? "solana" : "solana-test", txId: receipt.receipt.id,
-      isNewVersion: Boolean(publishParentTx) });
+      isNewVersion: Boolean(acceptedParent) });
   }
 
   async function runDemoPublish(phrase: string) {

@@ -5,7 +5,9 @@ Rooted in the Kazakh tradition of shezhire, designed for families everywhere.
 
 SEJIRE already includes a genealogy editor, ancestor views, PDF/JSON exports, three interface languages (Kazakh, Russian, English), encrypted Arweave archives and recovery. This repository develops a **Solana-funded preservation flow** on top of that existing product.
 
-**Current stage:** devnet prototype. Local tests and production build pass; real wallet signing, paid upload and fresh-device network recovery still require end-to-end acceptance. A quote or a Turbo acceptance receipt alone does not prove final Arweave settlement.
+**Current stage:** devnet prototype. Local tests and production build pass. Live software-signer uploads, same-item retries and receipt-based recovery in a clean browser have passed; real Phantom/Solflare extensions and actual SOL-funded uploads still require acceptance. A quote or a Turbo acceptance receipt alone does not prove final Arweave settlement.
+
+**Continuing on another Mac with Codex CLI?** Read [the handoff and next test steps](docs/CONTINUE_ON_ANOTHER_MAC.md). Repository instructions are in [AGENTS.md](AGENTS.md). Use the `feat/solana-preservation` branch for this continuation.
 
 ## Run locally
 
@@ -23,6 +25,14 @@ npm run dev --prefix apps/web
 Open the address printed by Vite. Create a tree without an account or payment wallet. Choose **Save**, create and confirm SEJIRE recovery words, then **Save with Solana**. Phantom or Solflare signs through its own interface. SEJIRE never asks for the payment wallet's recovery phrase.
 
 The default Solana environment is **devnet**, using Turbo's test services. Test uploads are not permanent backups. Keep an encrypted file and the recovery words separately. Mainnet requires an explicit `VITE_SOLANA_NETWORK=mainnet-beta` build and completion of [acceptance checks](docs/SOLANA_PRESERVATION.md).
+
+## Restore an encrypted file on another computer
+
+Choose **Open with 12 words → Open from file**, select the downloaded `sejire-vault-….json`, enter the matching **SEJIRE** recovery words, then choose **Restore archive**. You can select the file before entering the words and retry a mistyped phrase without selecting the file again. A downloaded SEJIRE recovery-words JSON can also fill in the words while retaining the selected archive.
+
+File recovery does not contact Arweave or require a payment wallet. It retains the entire vault, including trees other than the one displayed by the editor. Removing the selected file returns to searching for saved versions online. Chrome download and isolated-profile file recovery were verified on September 29; other browser/device combinations remain acceptance work.
+
+The same form accepts a preservation receipt JSON. Unlike an encrypted backup file, a receipt requires network access to retrieve the archive. It selects the correct network and checks the exact ciphertext hash before decryption; SEJIRE recovery words are still required, but the payment wallet is not.
 
 ## How preservation works
 
@@ -68,4 +78,4 @@ Pages workflow builds this repository's `gh-pages` branch with **devnet** settin
 
 ## Known release limits
 
-Wallet signing/upload/settlement/independent-device recovery are still unverified end to end. The SDK adds a large lazy-loaded chunk and transitive dependency audit findings; see the integration document. Existing cashier concurrency and AO privacy/bootstrap concerns need separate work before those paths are offered as production features. Do not treat a passing build as a security audit.
+Real extension approval, actual SOL payment and final Arweave settlement are still unverified end to end; the free software-signer and clean-browser receipt-recovery paths have passed. The SDK adds large lazy-loaded chunks and transitive dependency audit findings; see the integration document. Existing cashier concurrency and AO privacy/bootstrap concerns need separate work before those paths are offered as production features. Do not treat a passing build as a security audit.

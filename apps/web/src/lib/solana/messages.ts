@@ -17,6 +17,25 @@ const en = {
   unavailable: "Could not obtain a safe quote. Check your wallet/network connection and try again.",
   success: "Turbo accepted the encrypted archive. Download and keep the receipt.",
   testSuccess: "Test upload accepted. Keep the encrypted backup; devnet is not permanent storage.",
+  topUp: "If free allowance and credits are insufficient, I authorize one top-up up to the limit above (plus the Solana network fee).",
+  funding: "Free allowance / credits are insufficient. To continue, explicitly allow a top-up and retry. No new payment was requested by this attempt.",
+  paymentPending: "The previous payment needs reconciliation. Retry checks that payment; it will not create another transfer. Keep the receipt/backup and check your wallet if this persists.",
+  previousPayment: "Another archive has an unresolved payment. Resume its saved attempt before authorizing a new top-up.",
+  journal: "Safe local storage or cross-tab locking is unavailable. No new payment will be requested. Use a supported browser with storage enabled; keep the encrypted backup.",
+  inProgress: "An upload is already running in another tab. Finish it before retrying here.",
+  signing: "1/3 · Sign the encrypted archive in your wallet. This message signature is not a SOL transfer.",
+  uploading: "2/3 · Sending the signed archive. A retry reuses the same signed bytes.",
+  payment: "Approve the limited storage top-up in your wallet. Never enter your recovery words.",
+  checkingPayment: "Checking the existing payment with Turbo. Do not send another transfer manually.",
+  verify: "Verify download from the network", verifying: "3/3 · Downloading the archive and checking SHA-256…",
+  verified: "Download verified: the encrypted bytes match the receipt. Restore using this receipt and your 12 SEJIRE words on another device.",
+  notAvailable: "The archive is not available at the gateway yet, or test storage has expired. Retry later or restore from your encrypted backup. Do not pay again.",
+  integrity: "Integrity check failed. The downloaded archive does not match the receipt. Restoration was stopped.",
+  retrieveFailed: "Could not download the archive. Check your connection and retry, or use the encrypted backup. No payment is needed for restoration.",
+  receiptRestore: "The receipt selects the network and checks the archive hash. You still need your 12 SEJIRE words; no wallet connection is needed.",
+  savedAttempt: "A saved attempt exists for this vault. Resume it to recover its receipt or finish the upload. It contains the earlier snapshot, not subsequent edits.",
+  resume: "Resume saved attempt", resumed: "Resuming the earlier saved snapshot. Subsequent edits remain in the editor.",
+  cancelled: "Operation stopped or signature rejected. If a transfer was already submitted, retry will check it first.",
 };
 const ru: typeof en = {
   save: "Сохранить через Solana", title: "Сохранить историю семьи", network: "Сеть",
@@ -36,6 +55,25 @@ const ru: typeof en = {
   unavailable: "Не удалось получить расчёт. Проверьте подключение кошелька и сети, затем повторите.",
   success: "Turbo принял зашифрованный архив. Сохраните квитанцию.",
   testSuccess: "Тестовая загрузка принята. Сохраните зашифрованную копию: devnet не является постоянным хранилищем.",
+  topUp: "Если бесплатного лимита и кредитов не хватит, разрешаю одно пополнение в пределах суммы выше (плюс комиссия сети Solana).",
+  funding: "Бесплатного лимита / кредитов не хватило. Для продолжения явно разрешите пополнение и повторите. Эта попытка не запрашивала новый платёж.",
+  paymentPending: "Предыдущий платёж требует проверки. Повтор проверит его, не создавая новый перевод. Сохраните копию; если статус не меняется, проверьте кошелёк.",
+  previousPayment: "У другого архива остался непроверенный платёж. Возобновите сохранённую попытку, прежде чем разрешать новое пополнение.",
+  journal: "Недоступны надёжное локальное хранилище или блокировка между вкладками. Новый платёж не будет запрошен. Используйте поддерживаемый браузер с включённым хранилищем; скачайте копию.",
+  inProgress: "Загрузка уже выполняется в другой вкладке. Сначала завершите её.",
+  signing: "1/3 · Подпишите зашифрованный архив в кошельке. Подпись сообщения — не перевод SOL.",
+  uploading: "2/3 · Отправляем подписанный архив. Повтор использует те же подписанные данные.",
+  payment: "Подтвердите ограниченное пополнение для хранения в кошельке. Не вводите секретную фразу.",
+  checkingPayment: "Проверяем существующий платёж в Turbo. Не отправляйте повторный перевод вручную.",
+  verify: "Проверить скачивание из сети", verifying: "3/3 · Скачиваем архив и сверяем SHA-256…",
+  verified: "Скачивание проверено: зашифрованные данные совпадают с квитанцией. Для восстановления на другом устройстве нужны эта квитанция и 12 слов SEJIRE.",
+  notAvailable: "Архив пока недоступен на шлюзе или срок тестового хранения истёк. Повторите позже либо откройте зашифрованную копию. Повторно платить не нужно.",
+  integrity: "Проверка целостности не пройдена: скачанный архив не совпадает с квитанцией. Восстановление остановлено.",
+  retrieveFailed: "Не удалось скачать архив. Проверьте соединение и повторите либо используйте зашифрованную копию. Для восстановления оплата не нужна.",
+  receiptRestore: "Квитанция выбирает сеть и проверяет хеш архива. Ещё нужны 12 слов SEJIRE; подключать кошелёк не требуется.",
+  savedAttempt: "Для этого архива есть сохранённая попытка. Её можно продолжить или получить квитанцию. Это прежний снимок, без последующих правок.",
+  resume: "Продолжить сохранённую попытку", resumed: "Продолжаем прежний снимок. Последующие правки остаются в редакторе.",
+  cancelled: "Операция остановлена или подпись отклонена. Если перевод уже отправлен, повтор сначала проверит его.",
 };
 const kk: typeof en = {
   save: "Solana арқылы сақтау", title: "Отбасы тарихын сақтау", network: "Желі",
@@ -55,5 +93,38 @@ const kk: typeof en = {
   unavailable: "Бағаны алу мүмкін болмады. Әмиян мен желі байланысын тексеріп, қайталаңыз.",
   success: "Turbo шифрланған мұрағатты қабылдады. Түбіртекті сақтаңыз.",
   testSuccess: "Сынақ жүктеу қабылданды. Шифрланған көшірмені сақтаңыз: devnet тұрақты сақтау емес.",
+  topUp: "Тегін лимит пен кредиттер жетпесе, жоғарыдағы шекке дейін бір рет толықтыруға рұқсат беремін (Solana комиссиясы бөлек).",
+  funding: "Тегін лимит / кредиттер жеткіліксіз. Жалғастыру үшін толықтыруға рұқсат беріп, қайталаңыз. Бұл әрекет жаңа төлем сұраған жоқ.",
+  paymentPending: "Алдыңғы төлем тексеруді қажет етеді. Қайталау оны тексереді, жаңа аударым жасамайды. Көшірмені сақтаңыз; күйі өзгермесе, әмиянды тексеріңіз.",
+  previousPayment: "Басқа мұрағаттың төлемі әлі тексерілмеген. Жаңа толықтыруға дейін сақталған әрекетті жалғастырыңыз.",
+  journal: "Сенімді жергілікті сақтау не қойындыларды бұғаттау қолжетімсіз. Жаңа төлем сұралмайды. Сақтауы қосылған браузерді пайдаланып, шифрланған көшірмені жүктеңіз.",
+  inProgress: "Басқа қойындыда жүктеу жүріп жатыр. Алдымен оны аяқтаңыз.",
+  signing: "1/3 · Әмиянда шифрланған мұрағатқа қол қойыңыз. Хабарламаға қол қою SOL аударымы емес.",
+  uploading: "2/3 · Қол қойылған мұрағат жіберілуде. Қайталау сол деректерді пайдаланады.",
+  payment: "Әмиянда сақтау үшін шектелген толықтыруды растаңыз. Құпия сөздерді енгізбеңіз.",
+  checkingPayment: "Turbo жүйесінде бар төлем тексерілуде. Қайта қолмен аудармаңыз.",
+  verify: "Желіден жүктеуді тексеру", verifying: "3/3 · Мұрағатты жүктеп, SHA-256 тексерудеміз…",
+  verified: "Жүктеу тексерілді: шифрланған деректер түбіртекке сәйкес. Басқа құрылғыда қалпына келтіру үшін осы түбіртек пен SEJIRE-дің 12 сөзі керек.",
+  notAvailable: "Мұрағат шлюзде әлі жоқ немесе сынақ сақтау мерзімі өтті. Кейін қайталаңыз не шифрланған көшірмені ашыңыз. Қайта төлемеңіз.",
+  integrity: "Тұтастық тексерілмеді: жүктелген мұрағат түбіртекке сәйкес емес. Қалпына келтіру тоқтатылды.",
+  retrieveFailed: "Мұрағат жүктелмеді. Байланысты тексеріп, қайталаңыз не шифрланған көшірмені пайдаланыңыз. Қалпына келтіру ақысыз.",
+  receiptRestore: "Түбіртек желіні таңдап, мұрағат хешін тексереді. SEJIRE-дің 12 сөзі де керек; әмиянды қосу қажет емес.",
+  savedAttempt: "Бұл мұрағаттың сақталған әрекеті бар. Оны жалғастырып немесе түбіртекті алуға болады. Онда кейінгі өзгерістер жоқ.",
+  resume: "Сақталған әрекетті жалғастыру", resumed: "Бұрынғы көшірме жалғастырылуда. Кейінгі өзгерістер редакторда қалады.",
+  cancelled: "Әрекет тоқтатылды немесе қол қою қабылданбады. Аударым жіберілсе, қайталау алдымен оны тексереді.",
 };
 export const solanaMessages: Record<UiLocale, typeof en> = { en, ru, kk };
+
+export function preservationError(locale: UiLocale, code: string): string | undefined {
+  const t = solanaMessages[locale];
+  if (code === "funding_required") return t.funding;
+  if (code === "payment_pending") return t.paymentPending;
+  if (code === "previous_payment_unresolved") return t.previousPayment;
+  if (/journal_unavailable|upload_lock_unavailable/.test(code)) return t.journal;
+  if (code === "upload_in_progress") return t.inProgress;
+  if (code === "archive_not_available") return t.notAvailable;
+  if (code === "archive_integrity_mismatch") return t.integrity;
+  if (code === "retrieval_unavailable" || /timeout/i.test(code)) return t.retrieveFailed;
+  if (/abort|reject|cancel/i.test(code)) return t.cancelled;
+  return undefined;
+}
