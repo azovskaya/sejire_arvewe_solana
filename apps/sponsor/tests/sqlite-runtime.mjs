@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { build } from 'esbuild';
+import { buildWorker } from './build-worker.mjs';
 import { Miniflare } from 'miniflare';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +29,7 @@ if (!process.argv[2]) {
   const temp = await mkdtemp(resolve(tmpdir(), 'sejire-sqlite-'));
   try {
     const bundle = resolve(temp, 'worker.mjs');
-    await build({ entryPoints: [resolve(here, 'sqlite-worker.ts')], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', outfile: bundle });
+    await buildWorker(resolve(here, 'sqlite-worker.ts'), bundle);
     for (const phase of ['write', 'restart-read']) {
       await new Promise((done, reject) => {
         const child = spawn(process.execPath, [fileURLToPath(import.meta.url), phase, temp, bundle], { stdio: 'inherit' });
@@ -40,7 +40,7 @@ if (!process.argv[2]) {
   } finally { await rm(temp, { recursive: true, force: true }); }
 } else {
   const [phase, persist, scriptPath] = process.argv.slice(2);
-  const runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: dirname(scriptPath), compatibilityDate: '2026-07-01',
+  const runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: dirname(scriptPath), compatibilityDate: '2026-07-01', compatibilityFlags: ['nodejs_compat'],
     durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true }, FAULT_LEDGER: { className: 'FaultLedger', useSQLite: true } },
     durableObjectsPersist: resolve(persist, 'db') });
   let passed = 0;

@@ -30,7 +30,8 @@
     "test:opsDesk": "tsx src/lib/opsDesk/store.selftest.ts",
     "test": "npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana",
     "test:solana": "tsx src/lib/solana/policy.selftest.ts && tsx src/lib/solana/wallet.selftest.ts && tsx src/lib/solana/upload.selftest.ts && tsx src/lib/solana/receipt.selftest.ts && tsx src/lib/solana/boundaries.selftest.ts",
-    "test:solana:live": "tsx src/lib/solana/devnet.e2e.ts"
+    "test:solana:live": "tsx src/lib/solana/devnet.e2e.ts",
+    "test:checkout-browser": "playwright test"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",
@@ -47,6 +48,7 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@types/node": "^24.13.2",
     "@types/node-forge": "^1.3.14",
     "@types/react": "^19.2.17",

@@ -26,7 +26,12 @@
     "archive:measure:local": "node --loader ./scripts/offline-ts-loader.mjs scripts/archive-size-study.mts",
     "test:rpc": "npm run test:rpc --prefix apps/sponsor",
     "test:sqlite": "npm run test:sqlite --prefix apps/sponsor",
-    "security:reachability": "node scripts/dependency-reachability.mjs"
+    "security:reachability": "node scripts/dependency-reachability.mjs",
+    "test:api": "npm run test:api --prefix apps/sponsor",
+    "checkout:build": "VITE_CHECKOUT_ENABLED=1 VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run web:build",
+    "test:checkout-browser": "npm run test:checkout-browser --prefix apps/web",
+    "test:preservation": "npm run test:preservation --prefix apps/sponsor",
+    "preview:package": "node scripts/build-preview-worker.mjs"
   },
   "devDependencies": {
     "permaweb-deploy": "^5.0.0",

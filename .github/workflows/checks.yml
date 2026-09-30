@@ -24,9 +24,23 @@ jobs:
       - run: npm run test:checkout
       - run: npm run test:rpc
       - run: npm run test:sqlite
+      - run: npm run test:api
+      - run: npm run test:preservation
       - run: npm run lint --prefix apps/web
       - run: npm run archive:measure
       - run: npm run solana:build
+      - run: npm run checkout:build
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - run: npm run test:checkout-browser
+      - run: npm run preview:package
+      - name: Preserve preview build for owner review (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: devnet-preview-build
+          path: |
+            .cache/devnet-preview/
+            apps/web/dist/
+          retention-days: 7
       - run: npm run security:reachability
       - name: Preserve static security evidence (no site publication)
         uses: actions/upload-artifact@v4

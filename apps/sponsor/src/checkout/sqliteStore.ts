@@ -43,13 +43,16 @@ export class SqliteAtomicOrderStore implements AtomicOrderStore {
       ...(row.payment_json ? { payment: JSON.parse(row.payment_json) } : {}) };
   }
   async get(id: string): Promise<StoredOrder | null> { return this.read(id); }
-  async create(order: Order): Promise<void> {
+  async create(order: Order): Promise<void> { await this.createLinked(order); }
+  /** Trusted metadata hook shares the order INSERT transaction; never supplied over HTTP. */
+  async createLinked(order: Order, link?: () => void): Promise<void> {
     assertOrder(order);
     this.storage.transactionSync(() => {
       if (this.sql.exec('SELECT id FROM orders WHERE id=? OR (network=? AND reference=?)', order.id, order.network, order.reference).toArray().length) throw new Error('order_or_reference_exists');
       const states: OrderStates = { payment: 'awaiting-payment', preservation: order.kind === 'preservation' ? 'awaiting-payment' : 'not-applicable',
         contribution: order.fundContribution.amount === '0' ? 'not-requested' : 'awaiting-payment' };
       this.sql.exec('INSERT INTO orders(id,network,reference,order_json,states_json) VALUES(?,?,?,?,?)', order.id, order.network, order.reference, JSON.stringify(order), JSON.stringify(states));
+      link?.();
     });
     await this.storage.sync();
   }

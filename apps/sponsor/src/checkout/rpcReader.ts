@@ -22,7 +22,8 @@ export class SolanaRpcReader implements TrustedTransactionReader {
     this.timeoutMs = config.timeoutMs ?? 10000;
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1 || this.timeoutMs > 30000) throw new Error('invalid_rpc_timeout');
   }
-  private async rpc(method: string, params: unknown[] = []): Promise<unknown> {
+  /** Server-only RPC primitive for pre-payment account checks; never forwarded from browser. */
+  async rpc(method: string, params: unknown[] = []): Promise<unknown> {
     const id = ++this.nextId, controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {

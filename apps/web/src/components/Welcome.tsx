@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { CheckoutPublishPanel } from './CheckoutPublishPanel';
+import { checkoutMessages } from '../lib/checkout/messages';
 import { loadDraftTree } from '../lib/draftStorage';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { landingMessages } from '../lib/i18n/landing';
@@ -11,6 +14,7 @@ type Props = {
 };
 
 export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier }: Props) {
+  const [supportOpen, setSupportOpen] = useState(false);
   const hasDraft = Boolean(loadDraftTree());
   const { t, locale } = useI18n();
   const copy = landingMessages[locale];
@@ -18,6 +22,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
     if (hasDraft && !window.confirm(t.welcome.replaceDraftConfirm)) return;
     onStartNew(t.defaultTreeTitle);
   }
+  if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
   return <main className="landing">
     <header className="landing-header">
       <span className="landing-brand">SEJIRE<span aria-hidden="true">.</span></span>
@@ -43,6 +48,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
       </li>)}
     </ol>
     <footer className="landing-footer">
+      {import.meta.env.VITE_CHECKOUT_ENABLED === "1" && <button type="button" className="btn ghost" onClick={() => setSupportOpen(true)}>{checkoutMessages[locale].support}</button>}
       <p>{copy.heritage}</p><p className="sub">{copy.privacy}</p>
       {import.meta.env.VITE_QA_TOOLS === '1' && <button type="button" className="welcome-link-quiet" onClick={onCashier}>{t.welcome.cashier}</button>}
     </footer>

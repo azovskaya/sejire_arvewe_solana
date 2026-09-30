@@ -9,7 +9,9 @@
     "dev": "echo 'Use: npx wrangler dev (Cloudflare login). Default PAYMENT_PROVIDER=mock.'",
     "test:checkout": "tsx src/checkout/selftest.ts",
     "test:rpc": "tsx src/checkout/rpc.selftest.ts",
-    "test:sqlite": "node tests/sqlite-runtime.mjs"
+    "test:sqlite": "node tests/sqlite-runtime.mjs",
+    "test:api": "node tests/api-runtime.mjs",
+    "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250705.0",
@@ -20,12 +22,18 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "arweave": "^1.15.7"
+    "@dha-team/arbundles": "1.0.4",
+    "arweave": "^1.15.7",
+    "bs58": "5.0.0"
   },
   "overrides": {
     "miniflare": {
       "sharp": "0.35.4",
       "undici": "7.29.1"
+    },
+    "elliptic": "6.6.1",
+    "@ethersproject/providers": {
+      "ws": "7.5.11"
     }
   }
 }
