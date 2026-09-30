@@ -22,12 +22,24 @@ jobs:
       - run: npm test
       - run: npm run check --prefix apps/sponsor
       - run: npm run test:checkout
+      - run: npm run test:rpc
+      - run: npm run test:sqlite
       - run: npm run lint --prefix apps/web
       - run: npm run archive:measure
       - run: npm run solana:build
+      - run: npm run security:reachability
+      - name: Preserve static security evidence (no site publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-1-security-evidence
+          path: .cache/a2-1/browser-dependency-reachability.json
+          retention-days: 14
       - name: Web dependency audit (non-blocking; release review required)
         continue-on-error: true
         run: npm audit --prefix apps/web --omit=dev
       - name: Sponsor dependency audit (non-blocking; release review required)
         continue-on-error: true
         run: npm audit --prefix apps/sponsor --omit=dev
+      - name: Sponsor test-tool dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor

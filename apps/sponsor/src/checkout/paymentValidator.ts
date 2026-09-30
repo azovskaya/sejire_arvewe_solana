@@ -1,7 +1,7 @@
 import { assertUnits } from '../../../../packages/checkout/amounts';
 import { assertBase58, assertOrder, type Order, type Network, type Asset } from '../../../../packages/checkout/order';
 /** Normalized evidence from a TRUSTED server RPC decoder, NEVER an HTTP request body.
- * Decoder/RPC transport are NOT implemented in A1. It must inspect raw instructions,
+ * SolanaRpcReader/decoder inspect raw instructions in A2.1. They must inspect
  * loaded addresses, token-account owners, authority/signers, genesis, fees and block time.
  * Balance changes or client paid=true cannot be normalized into this evidence.
  */

@@ -1,17 +1,18 @@
 import type { AtomicOrderStore, CommitResult } from './store';
 import { validatePayment, type TransactionEvidence, type ChainPolicy } from './paymentValidator';
-/** Server-only port. Production raw-RPC decoder/transport is intentionally absent in A1. */
+import { RpcEvidenceError, type RpcFailure } from './rpcErrors';
+/** Server-only port. SolanaRpcReader supplies raw-RPC evidence; browser JSON never does. */
 export interface TrustedTransactionReader {
   readonly chain: ChainPolicy;
   read(signature: string): Promise<TransactionEvidence | null>;
 }
-export type ReconciliationResult = CommitResult | Readonly<{ status: 'requires-reconciliation'; reason: 'not-found' | 'rpc-unavailable' | 'not-finalized' | 'missing-block-time' | 'validation-rejected' | 'credit-conflict' }>;
+export type ReconciliationResult = CommitResult | Readonly<{ status: 'requires-reconciliation'; reason: RpcFailure | 'not-found' | 'missing-block-time' | 'validation-rejected' | 'credit-conflict' }>;
 export async function reconcilePayment(store: AtomicOrderStore, reader: TrustedTransactionReader, orderId: string, signature: string): Promise<ReconciliationResult> {
   const record = await store.beginReconciliation(orderId, signature);
   if (record.payment) return { status: 'already-credited', record };
   let tx: TransactionEvidence | null;
   try { tx = await reader.read(signature); }
-  catch { return { status: 'requires-reconciliation', reason: 'rpc-unavailable' }; }
+  catch (error) { return { status: 'requires-reconciliation', reason: error instanceof RpcEvidenceError ? error.reason : 'rpc-unavailable' }; }
   if (!tx) return { status: 'requires-reconciliation', reason: 'not-found' };
   if (tx.signature !== signature) return { status: 'requires-reconciliation', reason: 'validation-rejected' };
   // Avoid accepting evidence from a wrong chain merely because it is still pending.

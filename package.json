@@ -2,7 +2,7 @@
   "name": "sejire",
   "private": true,
   "version": "0.3.0",
-  "description": "SEJIRE — versioned decentralized genealogy on Arweave + AO",
+  "description": "SEJIRE \u2014 versioned decentralized genealogy on Arweave + AO",
   "scripts": {
     "present": "python3 -m http.server 4173 --directory .",
     "deck:pptx": "node presentation/build-pptx.mjs && node presentation/build-pptx-en.mjs",
@@ -23,7 +23,10 @@
     "archive:measure": "apps/sponsor/node_modules/.bin/tsx scripts/archive-size-study.mts",
     "test:checkout:local": "node --loader ./scripts/offline-ts-loader.mjs apps/sponsor/src/checkout/selftest.ts",
     "sponsor:test:local": "node --experimental-global-webcrypto --loader ./scripts/offline-ts-loader.mjs apps/sponsor/src/selftest.ts",
-    "archive:measure:local": "node --loader ./scripts/offline-ts-loader.mjs scripts/archive-size-study.mts"
+    "archive:measure:local": "node --loader ./scripts/offline-ts-loader.mjs scripts/archive-size-study.mts",
+    "test:rpc": "npm run test:rpc --prefix apps/sponsor",
+    "test:sqlite": "npm run test:sqlite --prefix apps/sponsor",
+    "security:reachability": "node scripts/dependency-reachability.mjs"
   },
   "devDependencies": {
     "permaweb-deploy": "^5.0.0",
