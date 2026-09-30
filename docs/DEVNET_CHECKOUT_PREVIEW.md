@@ -85,9 +85,15 @@ Playwright использует существующий редактор и Res
 Runtime тест отдельно открывает ту же SQLite в новом Node/workerd процессе.
 Облачные failover и production scaling этими проверками не подтверждаются.
 
-Локальные TypeScript web/sponsor PASS; native Chromium/workerd на Catalina BLOCKED,
-их результаты нужно брать из фактического CI окончательного SHA. Живое расширение,
-платёж, sandbox POST и независимое получение файла пока NOT RUN.
+Локальные TypeScript web/sponsor PASS; native Chromium/workerd на Catalina BLOCKED.
+Ubuntu CI подтвердил 5/5 браузерных сценариев, 24 HTTP/SQLite сценария (включая
+перезапуск), 14 SQLite сценариев, 39 checkout и 49 RPC сценариев. Настоящий ANS-104
+signer проверен также внутри workerd; CommonJS built-ins и Buffer явно подключены
+через Node compatibility. Кошелёк и внешние ответы в этих тестах синтетические.
+Последний SHA и его CI указываются в итоговом сообщении, без цепочки коммитов
+для записи собственного SHA. Живое расширение, платёж, sandbox POST и независимое
+получение файла пока NOT RUN. Preview BLOCKED: нет согласованного Cloudflare доступа,
+environment devnet-preview, публичных получателей и защищённой настройки загрузчика.
 
 Согласуемый начальный живой тест: обычное сохранение 3 test USDC, сохранение со взносом
 1 test USDC (итого 4), отдельный взнос 1 test USDC: максимум 8 test USDC суммарно.
