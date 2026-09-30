@@ -46,7 +46,7 @@ classic SPL token accounts должны содержать именно devnet U
 или в логи. Browser journal хранит его и ciphertext в отдельной IndexedDB, без recovery words.
 
 Маршруты: `POST /orders`, `GET /orders/:id`, `POST /orders/:id/prepare`,
-`POST /orders/:id/verify`, `POST /orders/:id/reconcile`, `POST /orders/:id/execute`
+`POST /orders/:id/reserve`, `POST /orders/:id/verify`, `POST /orders/:id/reconcile`, `POST /orders/:id/execute`
 под `/api/checkout`. Условия — на сервере: devnet USDC, 3 USDC за сохранение,
 нулевая цена услуги для отдельной поддержки, точные разные получатели,
 reference, 15 минут, версия политики. Нет продуктового потолка взноса;

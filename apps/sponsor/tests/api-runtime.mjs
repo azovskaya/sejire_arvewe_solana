@@ -74,6 +74,7 @@ if (!process.argv[2]) {
       await test('unauthorized submission and reconcile cannot write pendingSignature', async () => {
         assert.equal((await verify(b, first.id)).status, 404);
         assert.equal((await verify(null, first.id)).status, 401);
+        assert.equal((await call(`/orders/${first.id}/reserve`, b, { signature: b58(64, 5) })).status, 404);
         assert.equal((await call(`/orders/${first.id}/reconcile`, b, {})).status, 404);
         assert.equal((await internal({ action: 'get', id: first.id })).pendingSignature, undefined);
       });

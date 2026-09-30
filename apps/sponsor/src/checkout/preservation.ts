@@ -30,6 +30,9 @@ export class TestnetPreservationService implements PreservationService {
   }
   async ready(bytes: number): Promise<void> {
     const key = this.key(), max = Number(this.env.MAX_ENVELOPE_BYTES);
+    const { HexSolanaSigner } = await import('@dha-team/arbundles/web');
+    const signer = new HexSolanaSigner(key), challenge = new TextEncoder().encode('SEJIRE isolated sandbox uploader readiness');
+    if (!await HexSolanaSigner.verify(signer.publicKey, challenge, await signer.sign(challenge))) throw new Error('uploader_not_ready');
     if (!Number.isSafeInteger(max) || max <= 0 || !Number.isSafeInteger(bytes) || bytes <= 0 || bytes > max) throw new Error('archive_not_supported');
     // Existing sandbox free eligibility is a technical service condition, not a new commercial cap.
     const itemBytes = bytes + 4096;
@@ -44,7 +47,7 @@ export class TestnetPreservationService implements PreservationService {
     const envelope = parseEnvelope(JSON.parse(serialized));
     if (!order.archive || new TextEncoder().encode(serialized).length !== order.archive.bytes || await envelopeDigest(serialized) !== order.archive.digest) throw new Error('archive_mismatch');
     await this.ready(order.archive.bytes);
-    const { createData, HexSolanaSigner } = await import('@dha-team/arbundles');
+    const { createData, HexSolanaSigner } = await import('@dha-team/arbundles/web');
     const signer = new HexSolanaSigner(this.key());
     const item = createData(Buffer.from(serialized), signer, { tags: [{ name: 'Content-Type', value: 'application/json' }, { name: 'App-Name', value: 'SEJIRE' }, { name: 'Protocol', value: 'sejire/v0.3' }, { name: 'Type', value: 'vault-envelope' }] });
     await item.sign(signer);

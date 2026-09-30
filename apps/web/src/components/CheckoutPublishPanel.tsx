@@ -100,8 +100,8 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
       <label><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} disabled={busy} /> {t.consent}</label>
       <button type="button" className="btn" disabled={busy || !consent} onClick={finishPayment}>{t.pay} {order ? formatAmount(order.total, 6) : ''} USDC + {formatSol(prepared.feeLamports)} SOL</button>
     </>}
-    {op && (op.signature || op.signingStarted || verified) && !complete && <button type="button" className="btn" disabled={busy} onClick={resume}>{verified ? t.upload : t.resume}</button>}
-    <div role="status" aria-live="polite">{complete ? t.complete : snapshot?.execution?.accepted ? t.accepted : verified ? t.verified : op?.signature ? t.unknown : ''}</div>
+    {op && (op.signature || op.signingStarted || verified) && !complete && !(verified && !currentEnvelope) && <button type="button" className="btn" disabled={busy} onClick={resume}>{verified ? t.upload : t.resume}</button>}
+    <div role="status" aria-live="polite">{complete ? t.complete : snapshot?.execution?.accepted ? t.accepted : verified ? (currentEnvelope ? t.verified : '') : op?.signature ? t.unknown : ''}</div>
     {verified && order?.fundContribution.amount !== '0' && <p>{t.thanks}</p>}
     {snapshot?.execution?.accepted && op && <button type="button" className="btn ghost" onClick={() => downloadReceipt(preservationReceipt(op))}>{t.receipt}</button>}
     {verified && op && <button type="button" className="btn ghost" onClick={() => downloadJson({ schema: 'sejire/payment-receipt/v1', network: 'devnet', order: op.order, payment: op.snapshot?.record.payment }, `sejire-payment-${order?.id}.json`)}>USDC — {t.receipt}</button>}

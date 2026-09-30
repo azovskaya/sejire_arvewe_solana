@@ -127,7 +127,8 @@ export async function pay(op: Operation, wallet: SolanaWalletAdapter, prepared: 
   const signedBytes: string = signed.serialize().toString('base64'); op.signedTransaction = signedBytes;
   await saveOperation(op); // Exact signature + bytes are durable BEFORE broadcast.
   // Reserve the signature server-side BEFORE network broadcast; null RPC is uncertainty, never unpaid.
-  await api(`/orders/${op.order.id}/verify`, op.token, { signature: op.signature });
+  if (op.order.expiresAt <= Date.now()) throw new Error('order_expired_not_broadcast');
+  await api(`/orders/${op.order.id}/reserve`, op.token, { signature: op.signature });
   const connection = new Connection('https://api.devnet.solana.com', 'finalized');
   try { await connection.sendRawTransaction(Buffer.from(signedBytes, 'base64'), { skipPreflight: false, maxRetries: 2 }); }
   catch { return refresh(op); } // Unknown result: retry ONLY identical bytes/reconcile.
@@ -139,7 +140,7 @@ export async function reconcile(op: Operation): Promise<Snapshot> {
   const snapshot = op.snapshot?.record.pendingSignature
     ? await api<Snapshot & { reason?: string }>(`/orders/${op.order.id}/reconcile`, op.token, {})
     : await api<Snapshot & { reason?: string }>(`/orders/${op.order.id}/verify`, op.token, { signature: op.signature });
-  if (!snapshot.record.payment && snapshot.reason === 'not-found' && op.signedTransaction) {
+  if (!snapshot.record.payment && snapshot.reason === 'not-found' && op.signedTransaction && op.order.expiresAt > Date.now()) {
     // Re-submit the EXACT signed transaction if reserve response/broadcast response was lost.
     // Same signature means no new payment, even if the first broadcast already succeeded.
     try { await new Connection('https://api.devnet.solana.com', 'finalized').sendRawTransaction(Buffer.from(op.signedTransaction, 'base64'), { skipPreflight: false, maxRetries: 2 }); } catch { /* retain uncertainty */ }
@@ -151,10 +152,10 @@ export async function execute(op: Operation): Promise<Snapshot> {
   const snapshot = await api<Snapshot>(`/orders/${op.order.id}/execute`, op.token, { serialized: serializeEnvelope(op.envelope) });
   op.snapshot = snapshot; await saveOperation(op); return snapshot;
 }
-export function preservationReceipt(op: Operation): PreservationReceipt {
+export function preservationReceipt(op: Operation): PreservationReceipt & { checkout: { orderId: string; paymentSignature: string; servicePayment: Order['servicePayment']; fundContribution: Order['fundContribution']; networkFeeLamports: string } } {
   const snapshot = op.snapshot, accepted = snapshot?.execution?.accepted;
   if (!op.order || !op.envelope || !accepted || !snapshot.record.payment) throw new Error('receipt_not_ready');
   return { schema: 'sejire/preservation-receipt/v1', network: 'devnet', status: 'accepted-by-turbo', wallet: op.order.payer,
     vaultId: op.envelope.vault_id, envelopeSha256: op.order.archive!.digest, acceptedAt: typeof accepted.sejireAcceptedAt === 'string' ? accepted.sejireAcceptedAt : new Date().toISOString(),
-    receipt: accepted as PreservationReceipt['receipt'] };
+    receipt: accepted as PreservationReceipt['receipt'], checkout: { orderId: op.order.id, paymentSignature: snapshot.record.payment.signature, servicePayment: op.order.servicePayment, fundContribution: op.order.fundContribution, networkFeeLamports: snapshot.record.payment.feeLamports } };
 }

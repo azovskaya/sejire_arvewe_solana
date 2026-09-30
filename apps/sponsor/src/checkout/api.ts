@@ -112,7 +112,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (requestedOrigin && !origins.includes(requestedOrigin)) throw new HttpError(403, 'origin_denied');
     origin = requestedOrigin;
     if (url.search || url.hash) return bad('query_not_supported'); // No secrets in URL.
-    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|prepare|execute))?$/.exec(url.pathname);
+    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|reserve|prepare|execute))?$/.exec(url.pathname);
     const sessionRoute = url.pathname === PREFIX + '/session';
     const createRoute = url.pathname === PREFIX + '/orders';
     if (!match && !sessionRoute && !createRoute) return reply(404, { error: 'not_found' });
@@ -158,6 +158,14 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     const id = match![1], snapshot = await owned.snapshot(id); // B cannot change A's pendingSignature or even invoke RPC.
     await ledger.call({ action: 'apiRate', buckets: [`${method === 'GET' ? 'read' : 'verify'}:${hash}`], limit: method === 'GET' ? 120 : 30 });
     if (method === 'GET') return reply(200, snapshot);
+    if (match![2] === 'reserve') {
+      const input = fields(await body(request), ['signature']);
+      if (typeof input.signature !== 'string') return bad('invalid_signature');
+      assertBase58(input.signature, 64);
+      if (snapshot.record.order.expiresAt <= Date.now() && !snapshot.record.pendingSignature) throw new HttpError(409, 'order_expired');
+      await owned.beginReconciliation(id, input.signature);
+      return reply(202, { status: 'requires-reconciliation', ...await owned.snapshot(id) });
+    }
     if (match![2] === 'prepare') {
       fields(await body(request), []);
       if (snapshot.record.pendingSignature || snapshot.record.payment) throw new HttpError(409, 'previous_payment_unresolved');
