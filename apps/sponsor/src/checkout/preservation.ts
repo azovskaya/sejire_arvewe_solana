@@ -1,4 +1,8 @@
 import { Buffer } from 'node:buffer';
+// The SDK's web entry references the Node Buffer global without importing it.
+// workerd nodejs_compat exposes node:buffer, but does not install this global.
+const bufferRuntime = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
+bufferRuntime.Buffer ??= Buffer;
 import bs58 from 'bs58';
 import type { Order } from '../../../../packages/checkout/order';
 import { parseEnvelope, serializeEnvelope } from '../../../web/src/lib/crypto/envelope';

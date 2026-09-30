@@ -61,7 +61,10 @@ export default {
     });
     const preservation: PreservationService = {
       ready: async () => { if (request.headers.get('X-Test-Upload') === 'not-ready') throw new Error('uploader_not_ready'); },
-      sign: (order, serialized) => actual.sign(order, serialized),
+      sign: async (order, serialized) => {
+        try { return await actual.sign(order, serialized); }
+        catch (error) { console.error('Synthetic uploader runtime failure:', error instanceof Error ? error.message : 'unknown'); throw error; }
+      },
       upload: plan => actual.upload(plan),
       retrieve: (id, digest) => actual.retrieve(id, digest),
     };
