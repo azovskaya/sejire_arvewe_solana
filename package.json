@@ -18,7 +18,12 @@
     "treasury:init": "node apps/sponsor/scripts/init-treasury.mjs",
     "deploy:pages": "bash scripts/deploy-pages.sh",
     "deploy:permaweb": "bash scripts/deploy-permaweb.sh",
-    "web:build:arns": "VITE_PUBLISH_MODE=self npm run build --prefix apps/web"
+    "web:build:arns": "VITE_PUBLISH_MODE=self npm run build --prefix apps/web",
+    "test:checkout": "npm run test:checkout --prefix apps/sponsor",
+    "archive:measure": "apps/sponsor/node_modules/.bin/tsx scripts/archive-size-study.mts",
+    "test:checkout:local": "node --loader ./scripts/offline-ts-loader.mjs apps/sponsor/src/checkout/selftest.ts",
+    "sponsor:test:local": "node --experimental-global-webcrypto --loader ./scripts/offline-ts-loader.mjs apps/sponsor/src/selftest.ts",
+    "archive:measure:local": "node --loader ./scripts/offline-ts-loader.mjs scripts/archive-size-study.mts"
   },
   "devDependencies": {
     "permaweb-deploy": "^5.0.0",

@@ -2,7 +2,7 @@ name: SEJIRE checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/solana-preservation]
 permissions:
   contents: read
 jobs:
@@ -20,9 +20,14 @@ jobs:
       - run: npm ci --prefix apps/web
       - run: npm ci --prefix apps/sponsor
       - run: npm test
-      - run: npm run web:build
-        env:
-          VITE_PUBLISH_MODE: solana
-          VITE_SOLANA_NETWORK: devnet
-      - name: Dependency report (release review required)
-        run: npm audit --prefix apps/web --omit=dev || true
+      - run: npm run check --prefix apps/sponsor
+      - run: npm run test:checkout
+      - run: npm run lint --prefix apps/web
+      - run: npm run archive:measure
+      - run: npm run solana:build
+      - name: Web dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/web --omit=dev
+      - name: Sponsor dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor --omit=dev

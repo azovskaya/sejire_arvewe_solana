@@ -1,5 +1,11 @@
 # Продолжение SEJIRE на другом Mac через Codex CLI
 
+> **30.09.2026 — сохранение A0/A1 и штатный CI:** владелец разрешил commit/push только в `origin/feat/solana-preservation` и адресные исправления CI. Проверены совпадение историй после fetch, отсутствие repository webhooks, deploy только main/manual и Pages из gh-pages. Проверочный Ubuntu/Node 22 workflow включает отдельные install/test/typecheck/checkout/lint/measurement/devnet-build шаги; dependency audit явно non-blocking и сохраняет собственный неуспешный результат. На момент этой записи новый CI ещё NOT RUN; итоговый SHA/run нужно смотреть в GitHub Actions. Предыдущий отчёт ниже — исторический локальный snapshot. Реальные платежи и A2 не разрешены.
+
+> **30.09.2026 — локальный A0/A1:** новая работа ещё не закоммичена и не отправлена; базовый HEAD `d76e2f5`, ветка `feat/solana-preservation`. См. [отчёт A0/A1](verification/2026-09-30-a0-a1-report.md). Владелец разрешил фундамент нового checkout; прежний direct Turbo-путь сохранён. Полное завершение A0 не заявлено: CI/настоящее расширение/оплаченный devnet требуют отдельной проверки.
+>
+> Этот Mac: Intel, Catalina 10.15.8, Node 18.20.7/npm 10.8.2. Node 22 и native esbuild здесь не поддерживаются штатно. Не менять ОС/глобальные инструменты/профиль Codex. Для доступных offline-проверок используется отдельный JS TypeScript loader; штатный Node 22 CI остаётся обязательным. Установка sponsor-зависимостей локальная; web-зависимости не устанавливались.
+
 Передача работы: 29 сентября 2026. Репозиторий: `azovskaya/sejire_arvewe_solana`. Ветка: `feat/solana-preservation`; не `main`.
 
 ## С чего начать агенту
