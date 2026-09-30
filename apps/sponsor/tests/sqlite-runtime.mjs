@@ -40,7 +40,7 @@ if (!process.argv[2]) {
   } finally { await rm(temp, { recursive: true, force: true }); }
 } else {
   const [phase, persist, scriptPath] = process.argv.slice(2);
-  const runtime = new Miniflare({ modules: true, scriptPath, compatibilityDate: '2026-07-01',
+  const runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: dirname(scriptPath), compatibilityDate: '2026-07-01',
     durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true }, FAULT_LEDGER: { className: 'FaultLedger', useSQLite: true } },
     durableObjectsPersist: resolve(persist, 'db') });
   let passed = 0;
