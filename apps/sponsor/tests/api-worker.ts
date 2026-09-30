@@ -7,7 +7,8 @@ import { SolanaRpcReader, DEVNET_GENESIS } from '../src/checkout/rpcReader';
 import { fixtureStatus, fixtureTransaction, addr } from '../src/checkout/rpcFixtures';
 import { Buffer } from 'node:buffer';
 import { envelopeDigest } from '../../web/src/lib/solana/policy';
-import type { PreservationService } from '../src/checkout/preservation';
+import { TestnetPreservationService, type PreservationService } from '../src/checkout/preservation';
+import bs58 from 'bs58';
 import type { PaymentPreparer } from '../src/checkout/paymentPreparation';
 import type { StoredOrder } from '../src/checkout/store';
 export default {
@@ -40,11 +41,29 @@ export default {
       } else throw new Error('unexpected_rpc_method');
       return Response.json({ jsonrpc: '2.0', id: input.id, result });
     });
+    const archiveInput = request.clone();
+    // PUBLIC RFC8032 software fixture ONLY. Tests exercise the actual uploader in workerd;
+    // the transport is synthetic and NEVER sends signatures/uploads to a real network.
+    const vector = Buffer.from('9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a', 'hex');
+    const actual = new TestnetPreservationService({ ...env, CHECKOUT_UPLOAD_ENABLED: 'true', CHECKOUT_UPLOAD_SIGNER: bs58.encode(vector) }, async (url, init) => {
+      if (String(url).startsWith('https://payment.services.ar-io.dev/v1/account/free?')) return Response.json({ bytesRemaining: 1000000 });
+      if (String(url) === 'https://upload.services.ar-io.dev/v1/tx') {
+        const raw = new Uint8Array(init!.body as Uint8Array);
+        const id = Buffer.from(await envelopeDigest(raw.subarray(2, 66)), 'hex').toString('base64url');
+        return Response.json({ id, winc: '0', synthetic: true });
+      }
+      if (String(url).startsWith('https://ar-io.dev/raw/')) {
+        if (request.headers.get('X-Test-Upload') === 'not-retrieved') return new Response('', { status: 404 });
+        const payload = await archiveInput.clone().json() as { serialized: string };
+        return new Response(payload.serialized);
+      }
+      throw new Error('unexpected_synthetic_upload_endpoint');
+    });
     const preservation: PreservationService = {
       ready: async () => { if (request.headers.get('X-Test-Upload') === 'not-ready') throw new Error('uploader_not_ready'); },
-      sign: async (order, serialized) => ({ id: Buffer.from(await envelopeDigest(order.id + serialized), 'hex').toString('base64url'), rawBase64: Buffer.from(serialized).toString('base64'), envelope: JSON.parse(serialized), maxWinc: '0' }),
-      upload: async plan => ({ id: plan.id, winc: '0', synthetic: true }),
-      retrieve: async () => request.headers.get('X-Test-Upload') !== 'not-retrieved',
+      sign: (order, serialized) => actual.sign(order, serialized),
+      upload: plan => actual.upload(plan),
+      retrieve: (id, digest) => actual.retrieve(id, digest),
     };
     const preparer: PaymentPreparer = { prepare: async () => {
       if (request.headers.get('X-Test-Accounts') === 'missing') throw new Error('token_accounts_not_ready');

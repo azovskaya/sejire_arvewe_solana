@@ -43,6 +43,7 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
   }
   async function check(name?: WalletName) {
     await run(async () => {
+      setPrepared(null); setConsent(false);
       const next = name ? await connectWallet(name) : wallet;
       if (!next) throw new Error('wallet_not_found'); setWallet(next);
       parseAmount(amount, 6);

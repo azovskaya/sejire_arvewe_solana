@@ -113,9 +113,16 @@ test('wallet rejection sends nothing and allows explicit retry', async ({ page }
   await page.getByRole('button', { name: 'Поддержать сохранение других семей' }).click(); await confirm(page, '10');
   await expect(page.getByRole('alert')).toContainText('Подпись отклонена'); expect(external.counts.send).toBe(0);
   await page.evaluate(() => { window.fixtureWallet.reject = false; });
+  const nextPreparation = page.waitForResponse(response => response.url().endsWith('/prepare'));
   await page.getByRole('button', { name: 'Phantom — Проверить условия оплаты' }).click();
-  await page.getByRole('checkbox').check(); await page.getByRole('button', { name: /^Подтвердить .*USDC/ }).dblclick();
+  await nextPreparation;
+  await expect(page.getByRole('checkbox')).toBeEnabled();
+  await page.getByRole('checkbox').check();
+  const confirmButton = page.getByRole('button', { name: /^Подтвердить .*USDC/ });
+  await expect(confirmButton).toBeEnabled();
+  await confirmButton.evaluate(button => { button.click(); button.click(); });
   await expect(page.getByText(/Спасибо, Хранитель памяти/)).toBeVisible({ timeout: 90000 }); expect(external.counts.send).toBe(1);
+  expect(await page.evaluate(() => window.fixtureWallet.signCount)).toBe(2);
 });
 test('lost verification response and reload reconcile original payment without another wallet signature', async ({ page }) => {
   const external = await externalFixtures(page, { loseResponse: true }); await page.goto('/'); await installWallet(page);
