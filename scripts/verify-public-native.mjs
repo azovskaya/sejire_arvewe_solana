@@ -26,12 +26,14 @@ try{
   assert(!(await page.getByLabel('JSON конфигурации',{exact:true}).isVisible()));
   assert(await page.getByText('Режим просмотра',{exact:true}).isVisible());
   assert((await page.getByRole('article').filter({has:page.getByRole('heading',{name:'Цена хранения',exact:true})}).innerText()).includes('0.03 SOL'));
+  await page.screenshot({path:`.pages-evidence/dashboard-${i}.png`,fullPage:true});
   await page.getByRole('button',{name:'Кошельки',exact:true}).click();
   for(const name of ['Основная казна SEJIRE','Фонд памяти поколений','AR-резерв хранения'])await page.getByRole('heading',{name,exact:true}).waitFor();
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
   await page.locator('details.admin-advanced > summary').click();
   assert(await page.getByLabel('Доверенный genesis SHA-256',{exact:true}).isVisible());
   assert(await page.getByRole('button',{name:'Опубликовать конфигурацию в Arweave (сейчас отключено)',exact:true}).isDisabled());
+  await page.locator('details.admin-advanced > summary').click();
   await page.screenshot({path:`.pages-evidence/admin-wallets-${i}.png`,fullPage:true});
   await page.reload({waitUntil:'networkidle'});assert.equal(new URL(page.url()).hash,'#/admin');
   await page.getByRole('heading',{name:'Центр управления',exact:true}).waitFor();
