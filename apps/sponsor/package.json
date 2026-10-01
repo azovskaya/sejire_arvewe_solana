@@ -11,7 +11,8 @@
     "test:rpc": "tsx src/checkout/rpc.selftest.ts",
     "test:sqlite": "node tests/sqlite-runtime.mjs",
     "test:api": "node tests/api-runtime.mjs",
-    "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts"
+    "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts",
+    "test:protocol": "tsx src/protocol/selftest.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250705.0",

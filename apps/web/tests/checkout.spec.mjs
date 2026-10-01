@@ -1,15 +1,23 @@
 import { test, expect } from '@playwright/test';
-import { Miniflare } from '../../sponsor/node_modules/miniflare/dist/src/index.js';
-import { buildWorker } from '../../sponsor/tests/build-worker.mjs';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import bs58 from 'bs58';
 const base = 'http://127.0.0.1:5173';
 const b58 = fill => bs58.encode(new Uint8Array(32).fill(fill));
-let runtime, temp;
+let runtime, temp, protocol;
+const protocolMode=process.env.SEJIRE_PROTOCOL_TEST==='1';
 test.beforeAll(async () => {
   temp = await mkdtemp(resolve(tmpdir(), 'sejire-browser-'));
+  if(protocolMode){
+    const {bundle}=await import('../../../scripts/build-protocol-bundle.mjs');
+    const script=resolve(temp,'protocol.mjs');
+    await bundle(resolve('../sponsor/tests/protocol-browser-entry.ts'),script);
+    protocol=await import('file://'+script);
+    return;
+  }
+  const {Miniflare}=await import('../../sponsor/node_modules/miniflare/dist/src/index.js');
+  const {buildWorker}=await import('../../sponsor/tests/build-worker.mjs');
   const scriptPath = resolve(temp, 'worker.mjs');
   await buildWorker(resolve('../sponsor/tests/api-worker.ts'), scriptPath);
   runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: temp, compatibilityDate: '2026-07-01', compatibilityFlags: ['nodejs_compat'],
@@ -19,10 +27,14 @@ test.beforeAll(async () => {
 test.afterAll(async () => { await runtime?.dispose(); if (temp) await rm(temp, { recursive: true, force: true }); });
 async function externalFixtures(page, options = {}) {
   let broadcast = false, lost = false; const archives = new Map(), counts = { send: 0, upload: 0 };
+  const pilot=protocolMode?await protocol.pilot():null;
+  if(pilot)pilot.control.missing=true;
+  const handler=pilot?protocol.protocolHttp(pilot.engine,base,true):null;
   await page.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
   await page.route('**/api/checkout/**', async route => {
     const request = route.request(), headers = { ...request.headers(), 'CF-Connecting-IP': '192.0.2.10', 'X-Test-Rpc': broadcast ? 'success' : 'null' };
-    const response = await runtime.dispatchFetch(request.url(), { method: request.method(), headers, ...(request.postData() ? { body: request.postData() } : {}) });
+    const optionsHTTP={ method: request.method(), headers, ...(request.postData() ? { body: request.postData() } : {}) };
+    const response=handler?await handler(new Request(request.url(),optionsHTTP)):await runtime.dispatchFetch(request.url(),optionsHTTP);
     const data = await response.text();
     if (request.url().endsWith('/execute')) {
       counts.upload++;
@@ -35,7 +47,7 @@ async function externalFixtures(page, options = {}) {
   await page.route('https://api.devnet.solana.com/**', async route => {
     const p = route.request().postDataJSON(); let result;
     if (p.method === 'getFeeForMessage') result = { context: { slot: 100 }, value: 5000 };
-    else if (p.method === 'sendTransaction') { counts.send++; broadcast = true; const raw = Buffer.from(p.params[0], 'base64'); result = bs58.encode(raw.subarray(1, 65)); }
+    else if (p.method === 'sendTransaction') { counts.send++; broadcast = true; if(pilot)pilot.control.missing=false; const raw = Buffer.from(p.params[0], 'base64'); result = bs58.encode(raw.subarray(1, 65)); }
     else throw new Error(`unexpected external method ${p.method}`);
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ jsonrpc: '2.0', id: p.id, result }) });
   });

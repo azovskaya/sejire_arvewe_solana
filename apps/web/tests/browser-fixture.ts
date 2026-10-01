@@ -1,3 +1,4 @@
+import { ed25519 } from '@noble/curves/ed25519';
 // Local Vite/Playwright fixture ONLY; never imported by product entrypoints.
 import { Keypair } from '@solana/web3.js';
 import { createMnemonic } from '../src/lib/crypto/bip39';
@@ -10,7 +11,7 @@ export function installWallet() {
   const state = { reject: false, signCount: 0 };
   (window as unknown as { fixtureWallet: typeof state }).fixtureWallet = state;
   (window as unknown as { phantom: unknown }).phantom = { solana: {
-    publicKey: signer.publicKey, connect: async () => {}, signMessage: async () => new Uint8Array(64),
+    publicKey: signer.publicKey, connect: async () => {}, signMessage: async (message: Uint8Array) => ed25519.sign(message, new Uint8Array(32).fill(17)),
     signTransaction: async (tx: import('@solana/web3.js').Transaction) => {
       state.signCount++;
       if (state.reject) throw Object.assign(new Error('synthetic_wallet_rejection'), { code: 4001 });

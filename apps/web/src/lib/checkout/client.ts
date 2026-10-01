@@ -1,4 +1,5 @@
-import { PublicKey, Transaction, TransactionInstruction, Connection } from '@solana/web3.js';
+import { canonical } from '../../../../../packages/protocol/wire';
+import { PublicKey, Keypair, Transaction, TransactionInstruction, Connection } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { Buffer } from 'buffer';
 import type { SolanaWalletAdapter } from '@ardrive/turbo-sdk/web';
@@ -11,7 +12,7 @@ import type { PreservationReceipt } from '../solana/receipt';
 export type Intent = { kind: 'preservation' | 'contribution'; contribution: string; payer: string; archive?: { digest: string; bytes: number } };
 export type Snapshot = { record: { order: Order; pendingSignature?: string; states: { payment: string; contribution: string; preservation: string }; payment?: { signature: string; feeLamports: string } };
   execution?: { id: string; accepted: { id: string; winc: string; [key: string]: unknown } | null; retrieved: boolean; vaultId: string } | null; verification?: { status: string; reason?: string } };
-export type Operation = { id: string; token: string; intent: Intent; envelope?: EnvelopeV1; order?: Order; signature?: string; signedTransaction?: string; snapshot?: Snapshot; signingStarted?: boolean };
+export type Operation = { authorizationCommitted?: boolean; authorization?: { message: Record<string, unknown>; signatures?: {publicKey:string;signature:string}[] }; id: string; token: string; intent: Intent; envelope?: EnvelopeV1; order?: Order; signature?: string; signedTransaction?: string; snapshot?: Snapshot; signingStarted?: boolean };
 type Session = { id: 'session'; token: string; expiresAt: number };
 function endpoint(): string {
   const configured = import.meta.env.VITE_CHECKOUT_API_URL || location.origin;
@@ -55,7 +56,7 @@ async function access(): Promise<string> {
   await save('session', { id: 'session', token: result.accessToken, expiresAt: result.expiresAt });
   return result.accessToken;
 }
-export async function startOrder(payer: string, contribution: string, envelope?: EnvelopeV1): Promise<Operation> {
+export async function startOrder(payer: string, contribution: string, envelope?: EnvelopeV1, wallet?: SolanaWalletAdapter): Promise<Operation> {
   const units = parseAmount(contribution, 9); totalUnits('0', units);
   if (!envelope && units === '0') throw new Error('invalid_contribution_order');
   const serialized = envelope ? serializeEnvelope(envelope) : undefined;
@@ -63,15 +64,33 @@ export async function startOrder(payer: string, contribution: string, envelope?:
     ...(serialized ? { archive: { digest: await envelopeDigest(serialized), bytes: new TextEncoder().encode(serialized).length } } : {}) };
   const op: Operation = { id: crypto.randomUUID().replace(/-/g, ''), token: await access(), intent, ...(envelope ? { envelope } : {}) };
   await saveOperation(op); // Idempotency key + intent survive LOST create response.
-  return createOrResume(op);
+  return createOrResume(op, wallet);
 }
-export async function createOrResume(op: Operation): Promise<Operation> {
+export async function createOrResume(op: Operation, wallet?: SolanaWalletAdapter): Promise<Operation> {
   if (!op.order) {
-    const result = await api<Snapshot>('/orders', op.token, op.intent, op.id);
+    const result = await api<Snapshot & {authorization?:Record<string,unknown>}>('/orders', op.token, op.intent, op.id);
     assertOrder(result.record.order);
     const order = result.record.order;
     if (order.network !== 'devnet' || order.asset.symbol !== 'SOL' || order.payer !== op.intent.payer || order.kind !== op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || (op.intent.kind === 'preservation' ? BigInt(order.servicePayment.amount) <= 0n : order.servicePayment.amount !== '0') || order.archive?.digest !== op.intent.archive?.digest || order.archive?.bytes !== op.intent.archive?.bytes) throw new Error('checkout_order_mismatch');
-    op.order = order; op.snapshot = result; await saveOperation(op);
+    op.order = order; op.snapshot = result;
+    if (result.authorization) {
+      const cap=Keypair.fromSeed(Buffer.from(op.token,'hex')).publicKey.toBase58();
+      const accessHash=await envelopeDigest(canonical(cap));
+      const expected={order,accessHash};
+      if(canonical(result.authorization.body)!==canonical(expected)||result.authorization.domain!=='sejire/protocol-journal/v1')throw new Error('unsigned_order_mismatch');
+      op.authorization={message:result.authorization};
+    }
+    await saveOperation(op);
+  }
+  if(op.authorization&&!op.authorizationCommitted){
+    if(!op.authorization.signatures){
+      if(!wallet||wallet.publicKey.toString()!==op.order!.payer)throw new Error('order_signature_required');
+      const signature=await wallet.signMessage(new TextEncoder().encode(canonical(op.authorization.message)));
+      op.authorization.signatures=[{publicKey:op.order!.payer,signature:bs58.encode(signature instanceof Uint8Array?signature:signature.signature)}];await saveOperation(op);
+    }
+    op.snapshot=await api<Snapshot>(`/orders/${op.order!.id}/authorize`,op.token,op.authorization);
+    op.authorizationCommitted=true;
+    await saveOperation(op);
   }
   return op;
 }

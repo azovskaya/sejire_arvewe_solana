@@ -25,6 +25,12 @@ jobs:
       - run: npm run test:rpc
       - run: npm run test:sqlite
       - run: npm run test:api
+      - run: npm run test:protocol
+      - name: Local Lua boundary checks (not a live AO process)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+          lua5.4 ao/modules/local_checks.lua
       - run: npm run test:preservation
       - run: npm run lint --prefix apps/web
       - run: npm run archive:measure
@@ -32,6 +38,14 @@ jobs:
       - run: npm run checkout:build
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
       - run: npm run test:checkout-browser
+      - run: npm run test:protocol-browser
+      - run: npm run continuation:package
+      - run: npm run test:continuation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sejire-continuation-local-pilot
+          path: .cache/continuation/
+          retention-days: 14
       - run: npm run preview:package
       - name: Preserve preview build for owner review (no deployment)
         uses: actions/upload-artifact@v4

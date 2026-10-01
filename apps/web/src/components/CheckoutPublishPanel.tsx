@@ -47,7 +47,7 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
       const next = name ? await connectWallet(name) : wallet;
       if (!next) throw new Error('wallet_not_found'); setWallet(next);
       parseAmount(amount, 9);
-      const operation = op ? await createOrResume(op) : await startOrder(next.publicKey.toString(), amount, envelope);
+      const operation = op ? await createOrResume(op, next) : await startOrder(next.publicKey.toString(), amount, envelope, next);
       if (operation.order?.payer !== next.publicKey.toString()) throw new Error('wallet_changed');
       setOp({ ...operation }); setConsent(false);
       if (!operation.signature && !operation.signingStarted) setPrepared(await prepare(operation));
