@@ -95,8 +95,8 @@ signer проверен также внутри workerd; CommonJS built-ins и B
 через Node compatibility. Кошелёк и внешние ответы в этих тестах синтетические.
 Последний SHA и его CI указываются в итоговом сообщении, без цепочки коммитов
 для записи собственного SHA. Живое расширение, платёж, sandbox POST и независимое
-получение файла пока NOT RUN. Preview BLOCKED: нет согласованного Cloudflare доступа,
-environment devnet-preview, публичных получателей и защищённой настройки загрузчика.
+получение файла пока NOT RUN. Preview разрешён владельцем, но BLOCKED: нет доступа Cloudflare, environment
+devnet-preview и защищённой настройки загрузчика. Публичные получатели уже созданы.
 
 Разрешённый начальный живой тест: обычное сохранение 0.03 devnet SOL;
 сохранение + 0.005 SOL (итого 0.035); отдельный взнос 0.005 SOL.
@@ -122,7 +122,8 @@ HexSolana signer использует noble Ed25519, без ECDH/Ethereum. До 
 его запуском владелец подтверждает размещение и заполняет GitHub Environment
 `devnet-preview`: секреты `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
 `CHECKOUT_UPLOAD_SIGNER`, публичные variables `CHECKOUT_SERVICE_RECIPIENT`,
-`CHECKOUT_FUND_RECIPIENT`. Желательно require reviewer для environment.
+`CHECKOUT_FUND_RECIPIENT` необязательны: workflow по умолчанию использует перечисленные
+выше отдельные disposable devnet адреса. Желательно require reviewer для environment.
 Токен Cloudflare ограничить своим аккаунтом и правами тестового Workers deploy;
 никаких production wallet keys. Workflow проверяет ветку/confirm, выполняет тесты,
 упаковывает отдельный Worker, определяет существующий account workers subdomain
@@ -138,3 +139,16 @@ read-only и только затем создаёт согласованные p
 | ws 7.5.10 DoS | arbundles → ethers providers → ws; preview не содержит WebSocket server/Ethereum provider | Override 7.5.11 снимает эти high findings. Не меняет архивную криптографию. |
 | secp256k1 ECDH (high и parent arbundles high) | SDK содержит Ethereum helpers; наш sign/read использует только HexSolana/noble и собственный signed item type 4 | Наличие/bytes пакета фиксирует `worker-metafile.json`. ECDH не вызывается API, клиент не может выбрать signer или передать data item. Finding остаётся открытым; это анализ конкретного пути, не заявление о безопасности всего SDK. |
 | прежние web findings | Turbo/web3 → SDK/browser dependencies; редактор и restoration не переписаны | Сохраняются audit FAIL и прежняя таблица; CI строит оба frontend режима. Реальный wallet/payment acceptance нельзя заменять тестами. |
+
+Автоматический живой runner: `scripts/devnet-sol-checkout.mjs`. Сначала запуск без
+`--execute` выводит payer, баланс, получателей, точные lamports и fee, не подписывая
+транзакцию. Последующий `--execute` использует только локальный test-payer.json.
+Журнал, synthetic recovery words и публичные доказательства — вне Git в каталоге 700,
+файлы 600. Повтор использует тот же order/signature и проверяет неизменность зачёта.
+После реального restart backend выполнить ту же команду и сравнить прежние receipt/state.
+Сам runner и CI не доказывают живой restart до выполнения такого теста.
+
+Для Catalina: `node --experimental-loader ./scripts/offline-ts-loader.mjs scripts/devnet-sol-checkout.mjs https://<actual-preview-origin> plain`.
+Ubuntu Node 22: `npm exec --prefix apps/sponsor -- tsx scripts/devnet-sol-checkout.mjs https://<actual-preview-origin> plain`.
+Никакие команды живого runner не входят в CI. Готовность Cloudflare и его signer
+обязательна до предложения первого платежа; без неё статус живого сценария BLOCKED.

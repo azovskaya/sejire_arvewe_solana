@@ -191,6 +191,12 @@ for(const purpose of ['servicePayment','fundContribution'] as const) {
     assert.throws(()=>validatePayment(native,tx,chain));
   });
 }
+for (const [name, patch] of [
+  ['wrong payer', {feePayer:base58(32,91)}], ['wrong signer', {signers:[base58(32,91)]}],
+  ['wrong network', {network:'mainnet-beta' as const}], ['failed transaction', {error:{InstructionError:0}}],
+  ['not finalized', {commitment:'confirmed' as const}],
+  ['extra unexpected transfer', {transfers:[...evidence(native).transfers,{...evidence(native).transfers[0],instruction:'2'}]}],
+] as const) await test(`SOL rejects ${name}`,()=>assert.throws(()=>validatePayment(native,evidence(native,patch),chain)));
 await test('SOL large contributions remain exact without product cap',()=>{
   for(const value of ['0.001','0.005','0.01','0.1','1','10','100','1000000'])assert.equal(formatAmount(parseAmount(value,9),9),value);
   assert.equal(totalUnits('30000000',parseAmount('1000000',9)),'1000000030000000');
