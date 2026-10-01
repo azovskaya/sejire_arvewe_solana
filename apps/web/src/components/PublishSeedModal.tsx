@@ -45,6 +45,7 @@ import {
 } from "../lib/vaultSession/localArchive";
 import { useI18n } from "../lib/i18n/I18nProvider";
 
+import { NativeCheckoutPanel } from './NativeCheckoutPanel';
 import { CheckoutPublishPanel } from './CheckoutPublishPanel';
 import { SolanaPublishPanel } from "./SolanaPublishPanel";
 import { solanaMessages } from "../lib/solana/messages";
@@ -94,7 +95,7 @@ export function PublishSeedModal({
 }: Props) {
   const { t, locale } = useI18n();
   const st = solanaMessages[locale];
-  const SolanaSavePanel = import.meta.env.VITE_CHECKOUT_ENABLED === "1" ? CheckoutPublishPanel : SolanaPublishPanel;
+  const SolanaSavePanel = import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? NativeCheckoutPanel : import.meta.env.VITE_CHECKOUT_ENABLED === "1" ? CheckoutPublishPanel : SolanaPublishPanel;
   const solanaBusy = useRef(false);
   const freshKey = useRef(false);
   const solanaReturnMode = useRef<Mode>("create-ready");

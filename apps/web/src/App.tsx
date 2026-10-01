@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { RestoreSeed } from "./components/RestoreSeed";
-import { AdminDesk } from "./components/AdminDesk";
+import { NativeAdminDesk as AdminDesk } from "./components/NativeAdminDesk";
 import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
 import { clearDraftTree, loadDraftTree, saveDraftTree } from "./lib/draftStorage";

@@ -15,7 +15,9 @@ export class SolanaRpcReader implements TrustedTransactionReader {
   private readonly endpoint: string;
   private readonly timeoutMs: number;
   private nextId = 0;
-  constructor(config: ServerRpcConfig, private readonly transport: typeof fetch = fetch) {
+  private readonly transport: typeof fetch;
+  constructor(config: ServerRpcConfig, transport: typeof fetch = fetch) {
+    this.transport = transport;
     if (config.network !== 'devnet' || Object.keys(config).some(k => k !== 'network' && k !== 'timeoutMs')) throw new Error('invalid_server_rpc_configuration');
     this.endpoint = SERVER_RPCS.devnet;
     this.chain = Object.freeze({ network: 'devnet', genesisHash: DEVNET_GENESIS });

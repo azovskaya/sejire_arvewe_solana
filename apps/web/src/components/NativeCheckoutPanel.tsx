@@ -1,0 +1,40 @@
+import { useEffect, useState, useRef } from 'react';
+import type { EnvelopeV1 } from '../lib/crypto/encrypt';
+import { downloadEnvelope } from '../lib/crypto/vault';
+import { downloadJson } from '../lib/download';
+import { cachedChain, cachedJobs, saveJob } from '../lib/native/cache';
+import { nativeSession, trustChain } from '../lib/native/session';
+import { configHash, type ConfigChain } from '../lib/native/config';
+import { configForJob, newJob, reconcileJob, validateJob, type NativeJob } from '../lib/native/jobs';
+import { solWallet, preparePayment, signAndBroadcast } from '../lib/native/payment';
+import { formatAmount, parseAmount, requiresLargeAmountConfirmation } from '../../../../packages/checkout/amounts';
+export function NativeCheckoutPanel({envelope,onBack,onBusy}:{envelope?:EnvelopeV1;onBack:()=>void;onBusy?:(value:boolean)=>void}) {
+ const [chain,setChain]=useState<ConfigChain|undefined>(nativeSession()?.chain),[anchor,setAnchor]=useState(nativeSession()?.trusted??''),[contribution,setContribution]=useState('0'),[job,setJob]=useState<NativeJob>(),[pending,setPending]=useState<NativeJob[]>([]);
+ const [prepared,setPrepared]=useState<Awaited<ReturnType<typeof preparePayment>>>(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(''),[consent,setConsent]=useState(false);
+ const c=nativeSession()?.config;
+ useEffect(()=>{cachedChain().then(setChain).catch(()=>{});cachedJobs().then(jobs=>setPending(jobs.filter(j=>envelope?j.ciphertext&&JSON.parse(j.ciphertext).vault_id===envelope.vault_id:j.order.kind==='contribution'))).catch(()=>{});},[envelope]);
+ const lock=useRef(false);
+ async function run(action:()=>Promise<void>){if(lock.current)return;lock.current=true;setBusy(true);onBusy?.(true);setError('');try{await action();}catch(e){setError(e instanceof Error?e.message:'requires_reconciliation');}finally{lock.current=false;setBusy(false);onBusy?.(false);}}
+ async function authorize(){if(!chain)throw Error('signed_configuration_required');const session=await trustChain(chain,anchor);return session;}
+ async function create(){const s=await authorize(),wallet=solWallet();await wallet.connect();if(!wallet.publicKey)throw Error('wallet_not_connected');const units=parseAmount(contribution,9);if(requiresLargeAmountConfirmation(units,'100000000000')&&!window.confirm(`Добровольный вклад ${formatAmount(units,9)} SOL. Проверьте сумму и адрес фонда ${s.config.wallets.fund}.`))return;
+ const next=await newJob(s.config,wallet.publicKey.toString(),contribution,envelope,wallet);await saveJob(next);setJob(next);setPrepared(await preparePayment(s.config,next));setStatus('Заказ подписан. Сохранение будет исполнено вручную после передачи задания администратору.');}
+ async function pay(){if(!job||!prepared||!consent)throw Error('exact_consent_required');const s=await authorize();if(job.configHash!==await configHash(s.config))throw Error('configuration_changed_prepare_again');await signAndBroadcast(s.config,job,solWallet(),prepared,import.meta.env.VITE_NATIVE_SOL_MAINNET==='1');setPrepared(undefined);setJob({...job});setStatus('Транзакция отправлена либо требует сверки. Не оплачивайте повторно.');}
+ async function reconcile(){if(!job)throw Error('select_order');const s=await authorize(),config=await configForJob(s.chain,job,s.trusted);const result=await reconcileJob(job,config,await cachedJobs());setStatus(`Solana finalized: ${result.payment.signature}. ${job.order.kind==='contribution'?'Спасибо, Хранитель памяти. Вклад поступил на адрес фонда.':'Оплата проверена; архив ожидает ручного исполнения. Экспортируйте задание и передайте администратору.'}`);await saveJob(job);setJob({...job});}
+ return <section className="checkout-panel" aria-label="Прямое сохранение Arweave"><h3>{envelope?'Сохранить через Solana → Arweave':'Поддержать Фонд памяти поколений SEJIRE'}</h3>
+ <p>Ручной пилот без Turbo и обязательного облака. SOL оплачивает SEJIRE; отдельный AR-резерв владельца оплачивает Arweave. Автоматического SOL→AR нет.</p>
+ <p>{c?.environment==='devnet'?'Solana Devnet: только тестовые SOL. Arweave-загрузка относится к другой сети и требует отдельного разрешения.':'Сеть определяется проверенной конфигурацией; mainnet-оплата выключена по умолчанию.'}</p>
+ {envelope&&<button className="btn ghost" onClick={()=>downloadEnvelope(envelope)}>Скачать зашифрованную резервную копию</button>}
+ <label>Доверенный genesis SHA-256<input aria-label="Доверенный genesis SHA-256" value={anchor} onChange={e=>setAnchor(e.target.value.trim())}/></label>
+ <label>Подписанная конфигурация<input type="file" accept=".json" aria-label="Подписанная конфигурация" onChange={e=>{const f=e.target.files?.[0];if(f)void run(async()=>{if(f.size>10*1024*1024)throw Error('file_too_large');setChain(JSON.parse(await f.text()));});}}/></label>
+ <button className="btn ghost" disabled={busy} onClick={()=>void run(async()=>{await authorize();setStatus('Конфигурация проверена; адреса и цена зафиксируются в заказе.');})}>Проверить конфигурацию</button>
+ {c&&<p>Цена сохранения: {formatAmount(c.serviceLamports,9)} SOL · сеть {c.environment}</p>}
+ {pending.length>0&&<label>Продолжить прежний заказ<select aria-label="Продолжить прежний заказ" value={job?.order.id??''} onChange={e=>void run(async()=>{const found=pending.find(j=>j.order.id===e.target.value);if(!found)return;const s=await authorize(),cfg=await configForJob(s.chain,found,s.trusted);await validateJob(found,cfg);setJob(found);setPrepared(undefined);setStatus('Прежняя подпись сохранена. Сначала сверка, нового платежа нет.');})}><option value="">Выберите заказ</option>{pending.map(j=><option key={j.order.id} value={j.order.id}>{j.order.id}</option>)}</select></label>}
+ {!job&&<><label>Добавить вклад в Фонд памяти поколений (SOL)<input aria-label="Добровольный вклад SOL" inputMode="decimal" value={contribution} onChange={e=>setContribution(e.target.value)}/></label><p>Ввод — дополнительный вклад, не общая сумма. По умолчанию 0. Отдельная поддержка не требует архива и платы за сохранение.</p><button className="btn" disabled={busy} onClick={()=>void run(create)}>Подключить Phantom и подписать заказ</button></>}
+ {job&&<><dl><dt>Сеть / плательщик</dt><dd>{job.order.network} / {job.order.payer}</dd><dt>Сохранение → основная казна</dt><dd>{formatAmount(job.order.servicePayment.amount,9)} SOL → {job.order.servicePayment.recipient}</dd><dt>Вклад → Фонд памяти поколений</dt><dd>{formatAmount(job.order.fundContribution.amount,9)} SOL → {job.order.fundContribution.recipient}</dd><dt>Итого без комиссии</dt><dd>{formatAmount(job.order.total,9)} SOL</dd><dt>Комиссия сети отдельно</dt><dd>{prepared?formatAmount(prepared.feeLamports,9)+' SOL':'Уточняется перед подписью'}</dd></dl>
+ {prepared&&<><label><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>Подтверждаю показанные суммы, сеть и адреса</label><button className="btn" disabled={busy||!consent||(job.order.network==='mainnet-beta'&&import.meta.env.VITE_NATIVE_SOL_MAINNET!=='1')} onClick={()=>void run(pay)}>Оплатить {formatAmount(job.order.total,9)} SOL + комиссия</button></>}
+ <button className="btn ghost" disabled={busy||Boolean(job.paymentSignature)||job.signingStarted} onClick={()=>void run(async()=>{const s=await authorize(),cfg=await configForJob(s.chain,job,s.trusted);setPrepared(await preparePayment(cfg,job));})}>Подготовить неподписанный платёж</button>
+ <button className="btn" disabled={busy||!job.paymentSignature} onClick={()=>void run(reconcile)}>Сверить прежний платёж</button>
+ <button className="btn ghost" onClick={()=>downloadJson({schema:'sejire/native-job-package/v1',chain,job},`sejire-job-${job.order.id}.json`)}>Экспорт задания для админки</button><p>Подпись транзакции: {job.paymentSignature??'ещё нет'}. Экспортируйте файл также при потере ответа. Receipt выдаётся после загрузки; оплата не означает сохранение.</p>
+ </>}
+ {error&&<p role="alert">{error}</p>}{status&&<p role="status">{status}</p>}<button className="btn ghost" disabled={busy} onClick={onBack}>Назад</button></section>;
+}

@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
 import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
 import { parsePortableBackup, type PortableBackup } from "../lib/crypto/backup";
+import { retrieveNativeReceipt } from "../lib/native/receipt";
+import { DATA_GATEWAYS } from "../lib/arweave/gateways";
 import { retrieveReceiptEnvelope } from "../lib/solana/receipt";
 import { preservationError, solanaMessages } from "../lib/solana/messages";
 import { MAX_BACKUP_BYTES } from "../lib/crypto/envelope";
@@ -48,6 +50,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   const [status, setStatus] = useState("");
   const [showFile, setShowFile] = useState(false);
   const [backup, setBackup] = useState<({ name: string } & Exclude<PortableBackup, { kind: "words" }>) | null>(null);
+  const [nativeGateway, setNativeGateway] = useState("");
   const [phrase, setPhrase] = useState<string | null>(null);
   const [vaultId, setVaultId] = useState<string | null>(null);
   const [picker, setPicker] = useState<PickerItem[] | null>(null);
@@ -97,7 +100,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (backup) {
         const envelope = backup.kind === "receipt"
           ? await retrieveReceiptEnvelope(backup.receipt, { vaultId: keys.vaultId })
-          : backup.envelope;
+          : backup.kind === "nativeReceipt" ? await retrieveNativeReceipt(backup.receipt, nativeGateway ? [nativeGateway, ...DATA_GATEWAYS] : [...DATA_GATEWAYS]) : backup.envelope;
         let vault: VaultV1;
         try {
           vault = await openEnvelope(keys, envelope);
@@ -106,8 +109,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         }
         await finishWithVault(vault, {
           vaultId: keys.vaultId,
-          headTxId: backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
-          mnemonic: normalized, source: backup.kind === "receipt" ? "network" : "file",
+          headTxId: backup.kind === "nativeReceipt" ? backup.receipt.transactionId : backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
+          mnemonic: normalized, source: backup.kind !== "vault" ? "network" : "file",
         });
         return;
       }
@@ -363,6 +366,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         />
         {backup && <div className="sub" role="status">
           <p style={{ overflowWrap: "anywhere" }}>{backup.kind === "receipt" ? backup.name : t.restore.archiveReady(backup.name)}</p>
+          {backup.kind === "nativeReceipt" && <label>Другой Arweave gateway<input aria-label="Другой Arweave gateway" value={nativeGateway} onChange={e=>setNativeGateway(e.target.value)} /></label>}
           {backup.kind === "receipt" && <>
             <p>{solanaMessages[locale].receiptRestore}</p>
             {backup.receipt.network === "devnet" && <p>{solanaMessages[locale].test}</p>}

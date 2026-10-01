@@ -1928,3 +1928,11 @@ a {
   .landing-actions { align-items: stretch; flex-direction: column; }
   .landing-hero { padding-bottom: 2rem; }
 }
+
+/* Native administration reuses the existing controls, with bounded public evidence panes. */
+.native-admin section { margin-block: 1.25rem; padding-block: .75rem; border-top: 1px solid currentColor; }
+.native-admin label { display: block; margin-block: .75rem; }
+.native-admin input:not([type=checkbox]), .native-admin textarea, .native-admin select { max-width: 100%; width: 100%; box-sizing: border-box; }
+.native-admin pre { max-width: 100%; max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+.native-admin .actions { flex-wrap: wrap; }
+.checkout-panel dd { overflow-wrap: anywhere; }

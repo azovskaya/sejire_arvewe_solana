@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NativeCheckoutPanel } from './NativeCheckoutPanel';
 import { CheckoutPublishPanel } from './CheckoutPublishPanel';
 import { checkoutMessages } from '../lib/checkout/messages';
 import { loadDraftTree } from '../lib/draftStorage';
@@ -22,6 +23,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
     if (hasDraft && !window.confirm(t.welcome.replaceDraftConfirm)) return;
     onStartNew(t.defaultTreeTitle);
   }
+  if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
   return <main className="landing">
     <header className="landing-header">

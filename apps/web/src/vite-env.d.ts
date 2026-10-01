@@ -1,6 +1,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_NATIVE_AR_ENABLED?: string;
+  readonly VITE_NATIVE_AR_BROADCAST?: string;
+  readonly VITE_NATIVE_SOL_MAINNET?: string;
   readonly VITE_CHECKOUT_ENABLED?: string;
   readonly VITE_CHECKOUT_API_URL?: string;
   readonly VITE_SOLANA_NETWORK?: "devnet" | "mainnet-beta";
