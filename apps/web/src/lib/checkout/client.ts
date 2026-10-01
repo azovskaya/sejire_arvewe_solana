@@ -56,7 +56,7 @@ async function access(): Promise<string> {
   return result.accessToken;
 }
 export async function startOrder(payer: string, contribution: string, envelope?: EnvelopeV1): Promise<Operation> {
-  const units = parseAmount(contribution, 6); totalUnits(envelope ? '3000000' : '0', units);
+  const units = parseAmount(contribution, 9); totalUnits('0', units);
   if (!envelope && units === '0') throw new Error('invalid_contribution_order');
   const serialized = envelope ? serializeEnvelope(envelope) : undefined;
   const intent: Intent = { kind: envelope ? 'preservation' : 'contribution', payer, contribution,
@@ -70,7 +70,7 @@ export async function createOrResume(op: Operation): Promise<Operation> {
     const result = await api<Snapshot>('/orders', op.token, op.intent, op.id);
     assertOrder(result.record.order);
     const order = result.record.order;
-    if (order.network !== 'devnet' || order.asset.symbol !== 'USDC' || order.payer !== op.intent.payer || order.kind !== op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 6) || order.servicePayment.amount !== (op.intent.kind === 'preservation' ? '3000000' : '0') || order.archive?.digest !== op.intent.archive?.digest || order.archive?.bytes !== op.intent.archive?.bytes) throw new Error('checkout_order_mismatch');
+    if (order.network !== 'devnet' || order.asset.symbol !== 'SOL' || order.payer !== op.intent.payer || order.kind !== op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || (op.intent.kind === 'preservation' ? BigInt(order.servicePayment.amount) <= 0n : order.servicePayment.amount !== '0') || order.archive?.digest !== op.intent.archive?.digest || order.archive?.bytes !== op.intent.archive?.bytes) throw new Error('checkout_order_mismatch');
     op.order = order; op.snapshot = result; await saveOperation(op);
   }
   return op;
@@ -94,14 +94,10 @@ export async function prepare(op: Operation): Promise<Prepared> {
   const tx = new Transaction({ feePayer: new PublicKey(order.payer), recentBlockhash: accounts.blockhash });
   for (const purpose of ['servicePayment', 'fundContribution'] as const) {
     const part = order[purpose]; if (part.amount === '0') continue;
-    const destination = purpose === 'servicePayment' ? accounts.serviceDestination : accounts.fundDestination;
-    if (!destination) throw new Error('token_accounts_not_ready');
-    const data = Buffer.alloc(10); data[0] = 12; data.writeBigUInt64LE(BigInt(part.amount), 1); data[9] = 6;
+    const data = Buffer.alloc(12); data.writeUInt32LE(2, 0); data.writeBigUInt64LE(BigInt(part.amount), 4);
     tx.add(new TransactionInstruction({ programId: new PublicKey(order.asset.program), data, keys: [
-      { pubkey: new PublicKey(accounts.source), isSigner: false, isWritable: true },
-      { pubkey: new PublicKey(order.asset.mint!), isSigner: false, isWritable: false },
-      { pubkey: new PublicKey(destination), isSigner: false, isWritable: true },
-      { pubkey: new PublicKey(order.payer), isSigner: true, isWritable: false },
+      { pubkey: new PublicKey(order.payer), isSigner: true, isWritable: true },
+      { pubkey: new PublicKey(part.recipient), isSigner: false, isWritable: true },
       { pubkey: new PublicKey(order.reference), isSigner: false, isWritable: false },
     ] }));
   }

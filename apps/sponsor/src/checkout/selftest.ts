@@ -174,4 +174,25 @@ await test('validated payment and credit allocations are frozen', () => {
   const payment = validatePayment(order, evidence(order), chain);
   assert(Object.isFrozen(payment)); assert(Object.isFrozen(payment.credits)); assert(Object.isFrozen(payment.credits[0]));
 });
+// Native SOL-first MVP regression matrix; old generic USDC tests remain above.
+for (const [kind, serviceAmount, fundAmount] of [['preservation','30000000','0'],['preservation','30000000','5000000'],['contribution','0','5000000']] as const) {
+  await test(`SOL MVP ${kind}: ${serviceAmount} service + ${fundAmount} fund`, () => {
+    const sol = createOrder(input({asset:'SOL',kind,servicePayment:{amount:serviceAmount,recipient:service},fundContribution:{amount:fundAmount,recipient:treasury},...(kind==='contribution'?{archive:undefined}:{})}));
+    const payment=validatePayment(sol,evidence(sol),chain);
+    assert.deepEqual(payment.credits.map(c=>c.amount), [serviceAmount,fundAmount].filter(v=>v!=='0'));
+    assert.equal(sol.asset.decimals,9);
+  });
+}
+const native=createOrder(input({asset:'SOL',servicePayment:{amount:'30000000',recipient:service},fundContribution:{amount:'5000000',recipient:treasury}}));
+for(const purpose of ['servicePayment','fundContribution'] as const) {
+  for(const field of ['recipient','amount'] as const) await test(`SOL rejects wrong ${purpose} ${field}`,()=>{
+    const base=evidence(native), i=purpose==='servicePayment'?0:1;
+    const tx={...base,transfers:base.transfers.map((transfer,index)=>index===i?{...transfer,[field]:field==='recipient'?base58(32,90):'1'}:transfer)};
+    assert.throws(()=>validatePayment(native,tx,chain));
+  });
+}
+await test('SOL large contributions remain exact without product cap',()=>{
+  for(const value of ['0.001','0.005','0.01','0.1','1','10','100','1000000'])assert.equal(formatAmount(parseAmount(value,9),9),value);
+  assert.equal(totalUnits('30000000',parseAmount('1000000',9)),'1000000030000000');
+});
 console.log(`checkout.selftest: ${passed} scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers`);

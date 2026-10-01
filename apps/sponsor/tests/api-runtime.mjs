@@ -61,8 +61,8 @@ if (!process.argv[2]) {
         const r = await create(a, 'preservation_key_01'); assert.equal(r.status, 201); first = r.body.record.order;
         assert.equal(r.headers.get('Cache-Control'), 'no-store'); assert.equal(r.headers.get('Access-Control-Allow-Origin'), origin);
         assert.equal(JSON.stringify(r.body).includes(a), false);
-        assert.equal(first.servicePayment.amount, '3000000'); assert.equal(first.fundContribution.amount, '0');
-        assert.equal(first.network, 'devnet'); assert.equal(first.asset.symbol, 'USDC'); assert.equal(first.policyVersion, 'a2-2-test-v1');
+        assert.equal(first.servicePayment.amount, '30000000'); assert.equal(first.fundContribution.amount, '0');
+        assert.equal(first.network, 'devnet'); assert.equal(first.asset.symbol, 'SOL'); assert.equal(first.policyVersion, 'a2-2-test-v1');
         assert.equal(first.archive.bytes, 800000); assert.equal(r.body.record.states.preservation, 'awaiting-payment');
       });
       await test('A reads own order; B/unknown token/id do not reveal order', async () => {
@@ -97,12 +97,12 @@ if (!process.argv[2]) {
         assert.equal((await verify(a, first.id, 5, 'success', { evidence: {} })).status, 400);
         assert.equal((await internal({ action: 'get', id: first.id })).pendingSignature, undefined);
       });
-      await test('donation without archive/service; million USDC exact and maximum native amount accepted', async () => {
+      await test('donation without archive/service; million SOL exact and maximum native amount accepted', async () => {
         const r = await create(a, 'contribution_key01', contribution); assert.equal(r.status, 201); donation = r.body.record.order;
-        assert.equal(donation.servicePayment.amount, '0'); assert.equal(donation.fundContribution.amount, '1000000000001'); assert.equal(donation.archive, undefined);
-        const max = await create(a, 'maximum_native_key', { ...contribution, contribution: '18446744073709.551615' }); assert.equal(max.status, 201);
+        assert.equal(donation.servicePayment.amount, '0'); assert.equal(donation.fundContribution.amount, '1000000000001000'); assert.equal(donation.archive, undefined);
+        const max = await create(a, 'maximum_native_key', { ...contribution, contribution: '18446744073.709551615' }); assert.equal(max.status, 201);
         assert.equal(max.body.record.order.total, '18446744073709551615');
-        assert.equal((await create(a, 'maximum_native_key', { ...contribution, contribution: '18446744073709.551616' })).status, 400);
+        assert.equal((await create(a, 'maximum_native_key', { ...contribution, contribution: '18446744073.709551616' })).status, 400);
         assert.equal((await create(a, 'invalid_archive_key', { ...contribution, archive: preservation.archive })).status, 400);
       });
       await test('16 parallel verifications credit once; retries preserve verified/ready semantics', async () => {
@@ -113,7 +113,7 @@ if (!process.argv[2]) {
         assert.equal(r.body.record.states.payment, 'verified'); assert.equal(r.body.record.states.preservation, 'ready');
         assert.equal(r.body.record.states.contribution, 'not-requested'); assert.deepEqual(r.body.verification, { status: 'verified' });
         assert.equal((await verify(a, donation.id, 6)).body.record.states.contribution, 'received');
-        assert.equal(Object.values(await totals()).includes('3000000'), true); assert.equal(Object.values(await totals()).includes('1000000000001'), true);
+        assert.equal(Object.values(await totals()).includes('30000000'), true); assert.equal(Object.values(await totals()).includes('1000000000001000'), true);
       });
       await test('RPC uncertainty and bad recipient do not create credits; pending cannot be replaced', async () => {
         const r = await create(b, 'pending_order_key1'); pending = r.body.record.order;
@@ -128,7 +128,7 @@ if (!process.argv[2]) {
       await test('body bound works without Content-Length; malformed JSON/precision refused', async () => {
         assert.equal((await call('/orders', a, ' '.repeat(4097), { 'Idempotency-Key': 'oversize_request01' })).status, 413);
         assert.equal((await call('/orders', b, '{', { 'Idempotency-Key': 'malformed_json_01' })).status, 400);
-        assert.equal((await create(b, 'precision_input01', { ...contribution, contribution: '1.0000001' })).status, 400);
+        assert.equal((await create(b, 'precision_input01', { ...contribution, contribution: '1.0000000001' })).status, 400);
       });
       await test('origin allowlist and preflight do not replace bearer authorization', async () => {
         assert.equal((await call(`/orders/${first.id}`, a, undefined, { Origin: 'https://evil.example' })).status, 403);
@@ -183,7 +183,7 @@ if (!process.argv[2]) {
         assert.deepEqual((await call(`/orders/${s.first.id}`, s.a)).body.record.order, s.first);
         assert.equal((await call(`/orders/${s.first.id}`, s.b)).status, 404);
         assert.deepEqual(await totals(), s.totals);
-        assert.equal((await call(`/orders/${s.donation.id}`, s.a)).body.record.payment.credits[0].amount, '1000000000001');
+        assert.equal((await call(`/orders/${s.donation.id}`, s.a)).body.record.payment.credits[0].amount, '1000000000001000');
       });
       await test('idempotency survives restart/lost response without creating a second order', async () => {
         const r = await create(s.a, 'preservation_key_01'); assert.equal(r.status, 200); assert.equal(r.body.record.order.id, s.first.id);

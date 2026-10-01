@@ -17,6 +17,7 @@ export type CheckoutApiEnv = PreservationEnv & {
   CHECKOUT_FUND_RECIPIENT?: string;
   CHECKOUT_POLICY_VERSION?: string;
 };
+const SERVICE_PRICE_LAMPORTS = '30000000'; // Server policy: fixed per new order; old orders stay immutable.
 const PREFIX = '/api/checkout';
 const SESSION_MS = 30 * 86400000;
 const BODY_BYTES = 4096;
@@ -66,7 +67,7 @@ function intent(value: unknown) {
   if (input.kind !== 'preservation' && input.kind !== 'contribution') return bad('invalid_kind');
   if (typeof input.payer !== 'string' || typeof input.contribution !== 'string') return bad();
   assertBase58(input.payer, 32);
-  const contribution = parseAmount(input.contribution, 6);
+  const contribution = parseAmount(input.contribution, 9);
   if (input.kind === 'contribution') {
     if (input.archive !== undefined || contribution === '0') return bad('invalid_contribution_order');
     return { kind: input.kind, payer: input.payer, contribution } as const;
@@ -145,9 +146,9 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
       const input = intent(await body(request)), now = Date.now();
       const existing = await ledger.call({ action: 'apiExisting', hash, key, intent: JSON.stringify(input) });
       if (existing) return reply(200, existing);
-      const order: Order = createOrder({ id: randomHex(16), kind: input.kind, payer: input.payer, reference: reference(), network: 'devnet', asset: 'USDC',
+      const order: Order = createOrder({ id: randomHex(16), kind: input.kind, payer: input.payer, reference: reference(), network: 'devnet', asset: 'SOL',
         createdAt: now, expiresAt: now + 15 * 60000, policyVersion: env.CHECKOUT_POLICY_VERSION,
-        servicePayment: { amount: input.kind === 'preservation' ? '3000000' : '0', recipient: env.CHECKOUT_SERVICE_RECIPIENT },
+        servicePayment: { amount: input.kind === 'preservation' ? SERVICE_PRICE_LAMPORTS : '0', recipient: env.CHECKOUT_SERVICE_RECIPIENT },
         fundContribution: { amount: input.contribution, recipient: env.CHECKOUT_FUND_RECIPIENT },
         ...('archive' in input ? { archive: input.archive } : {}) });
       if (order.archive) await preservation.ready(order.archive.bytes);

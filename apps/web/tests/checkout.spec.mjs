@@ -63,11 +63,11 @@ async function openPreservation(page) {
 async function confirm(page, value = '0') {
   await page.locator('#checkout-contribution').fill(value);
   await page.getByRole('button', { name: 'Phantom — Проверить условия оплаты' }).click();
-  await expect(page.getByRole('button', { name: /^Подтвердить .*USDC/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Подтвердить .*SOL/ })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Я проверил точную сумму, сеть и получателей.' }).check();
-  await page.getByRole('button', { name: /^Подтвердить .*USDC/ }).click();
+  await page.getByRole('button', { name: /^Подтвердить .*SOL/ }).click();
 }
-for (const amount of ['0', '10.000001']) test(`existing editor → USDC ${amount} contribution → actual HTTP/store → download → clean/offline recovery (synthetic externals)`, async ({ page, browser }) => {
+for (const amount of ['0', '0.005']) test(`existing editor → SOL ${amount} contribution → actual HTTP/store → download → clean/offline recovery (synthetic externals)`, async ({ page, browser }) => {
   const external = await externalFixtures(page); await page.goto('/');
   const fixture = await page.evaluate(async () => (await import('/tests/browser-fixture.ts')).fixture());
   await restore(page, fixture.words, fixture.serialized); await installWallet(page); await openPreservation(page);
@@ -102,9 +102,9 @@ for (const amount of ['0', '10.000001']) test(`existing editor → USDC ${amount
 test('standalone support requires neither tree nor service fee; repeated click creates one signed payment', async ({ page }) => {
   const external = await externalFixtures(page); await page.goto('/'); await installWallet(page);
   await page.getByRole('button', { name: 'Поддержать сохранение других семей' }).click();
-  await confirm(page, '1000.000001'); await expect(page.getByText(/Спасибо, Хранитель памяти/)).toBeVisible({ timeout: 90000 });
+  await confirm(page, '0.005'); await expect(page.getByText(/Спасибо, Хранитель памяти/)).toBeVisible({ timeout: 90000 });
   expect(external.counts.send).toBe(1); expect(external.counts.upload).toBe(0);
-  await expect(page.locator('dd').filter({ hasText: /^0 USDC$/ })).toBeVisible();
+  await expect(page.locator('dd').filter({ hasText: /^0 SOL$/ })).toBeVisible();
   expect(await page.evaluate(async () => (await import('/src/lib/checkout/client.ts')).operations().then(list => list.at(-1).order.servicePayment.amount))).toBe('0');
 });
 test('wallet rejection sends nothing and allows explicit retry', async ({ page }) => {
@@ -118,7 +118,7 @@ test('wallet rejection sends nothing and allows explicit retry', async ({ page }
   await nextPreparation;
   await expect(page.getByRole('checkbox')).toBeEnabled();
   await page.getByRole('checkbox').check();
-  const confirmButton = page.getByRole('button', { name: /^Подтвердить .*USDC/ });
+  const confirmButton = page.getByRole('button', { name: /^Подтвердить .*SOL/ });
   await expect(confirmButton).toBeEnabled();
   await confirmButton.evaluate(button => { button.click(); button.click(); });
   await expect(page.getByText(/Спасибо, Хранитель памяти/)).toBeVisible({ timeout: 90000 }); expect(external.counts.send).toBe(1);

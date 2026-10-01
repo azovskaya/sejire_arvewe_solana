@@ -1,7 +1,7 @@
 export const checkoutMessages = {
   ru: {
-    title: 'Сохранить мою историю', fund: 'Фонд памяти поколений SEJIRE', add: 'Добавить вклад в Фонд памяти поколений', amount: 'Ваша сумма, USDC',
-    test: 'Тестовая версия: Solana devnet, тестовый USDC. Это не production-казна. Загрузка в Turbo sandbox не означает постоянное хранение.',
+    title: 'Сохранить мою историю', fund: 'Фонд памяти поколений SEJIRE', add: 'Добавить вклад в Фонд памяти поколений', amount: 'Ваша сумма, SOL',
+    test: 'Тестовая версия: Solana devnet, тестовый SOL. Это не production-казна. Загрузка в Turbo sandbox не означает постоянное хранение.',
     backup: 'Скачать зашифрованную резервную копию', prepare: 'Проверить условия оплаты', service: 'Сохранение', contribution: 'Добровольный вклад', fee: 'Сетевая комиссия в SOL',
     pay: 'Подтвердить', resume: 'Продолжить сверку', upload: 'Продолжить сохранение', receipt: 'Скачать квитанцию', back: 'Назад', done: 'Готово',
     thanks: 'Спасибо, Хранитель памяти. Ваш тестовый вклад поступил на отдельный тестовый адрес программы.',
@@ -14,8 +14,8 @@ export const checkoutMessages = {
     support: 'Поддержать сохранение других семей', recipient: 'Получатель', recoverWords: 'Слова SEJIRE нужны для расшифровки. Слова платёжного кошелька вводить не нужно.',
   },
   kk: {
-    title: 'Отбасымның тарихын сақтау', fund: 'SEJIRE ұрпақтар жады қоры', add: 'Ұрпақтар жады қорына үлес қосу', amount: 'Сомаңыз, USDC',
-    test: 'Сынақ нұсқасы: Solana devnet, сынақ USDC. Бұл production қазынасы емес. Turbo sandbox жүктеуі тұрақты сақтауды білдірмейді.',
+    title: 'Отбасымның тарихын сақтау', fund: 'SEJIRE ұрпақтар жады қоры', add: 'Ұрпақтар жады қорына үлес қосу', amount: 'Сомаңыз, SOL',
+    test: 'Сынақ нұсқасы: Solana devnet, сынақ SOL. Бұл production қазынасы емес. Turbo sandbox жүктеуі тұрақты сақтауды білдірмейді.',
     backup: 'Шифрланған резервтік көшірмені жүктеу', prepare: 'Төлем шарттарын тексеру', service: 'Сақтау', contribution: 'Ерікті үлес', fee: 'SOL желілік комиссиясы',
     pay: 'Растау', resume: 'Тексеруді жалғастыру', upload: 'Сақтауды жалғастыру', receipt: 'Түбіртекті жүктеу', back: 'Артқа', done: 'Дайын',
     thanks: 'Рақмет, жады сақтаушысы. Сынақ үлесіңіз бағдарламаның бөлек сынақ мекенжайына түсті.',
@@ -28,8 +28,8 @@ export const checkoutMessages = {
     support: 'Басқа отбасылардың тарихын сақтауға көмектесу', recipient: 'Алушы', recoverWords: 'Шифрды ашу үшін SEJIRE сөздері қажет. Төлем әмиянының сөздерін енгізбеңіз.',
   },
   en: {
-    title: 'Preserve my family history', fund: 'SEJIRE Generations Memory Fund', add: 'Add a contribution to the Generations Memory Fund', amount: 'Your amount, USDC',
-    test: 'Test version: Solana devnet, test USDC. This is not a production treasury. Turbo sandbox acceptance does not mean permanent storage.',
+    title: 'Preserve my family history', fund: 'SEJIRE Generations Memory Fund', add: 'Add a contribution to the Generations Memory Fund', amount: 'Your amount, SOL',
+    test: 'Test version: Solana devnet, test SOL. This is not a production treasury. Turbo sandbox acceptance does not mean permanent storage.',
     backup: 'Download encrypted backup', prepare: 'Check payment conditions', service: 'Preservation', contribution: 'Voluntary contribution', fee: 'SOL network fee',
     pay: 'Confirm', resume: 'Continue reconciliation', upload: 'Continue preservation', receipt: 'Download receipt', back: 'Back', done: 'Done',
     thanks: 'Thank you, Memory Keeper. Your test contribution reached the program’s separate test address.',

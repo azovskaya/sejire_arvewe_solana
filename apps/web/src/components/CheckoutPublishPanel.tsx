@@ -46,7 +46,7 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
       setPrepared(null); setConsent(false);
       const next = name ? await connectWallet(name) : wallet;
       if (!next) throw new Error('wallet_not_found'); setWallet(next);
-      parseAmount(amount, 6);
+      parseAmount(amount, 9);
       const operation = op ? await createOrResume(op) : await startOrder(next.publicKey.toString(), amount, envelope);
       if (operation.order?.payer !== next.publicKey.toString()) throw new Error('wallet_changed');
       setOp({ ...operation }); setConsent(false);
@@ -61,7 +61,7 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
   async function finishPayment() {
     await run(async () => {
       if (!op || !wallet || !prepared || !consent) return;
-      if (requiresLargeAmountConfirmation(op.order!.fundContribution.amount, '10000000000') && !window.confirm(`${t.large} ${formatAmount(op.order!.fundContribution.amount, 6)} USDC. ${t.check}\n${op.order!.fundContribution.recipient}`)) return;
+      if (requiresLargeAmountConfirmation(op.order!.fundContribution.amount, '100000000000') && !window.confirm(`${t.large} ${formatAmount(op.order!.fundContribution.amount, 9)} SOL. ${t.check}\n${op.order!.fundContribution.recipient}`)) return;
       await pay(op, wallet, prepared); setPrepared(null); setOp({ ...op });
       for (let i = 0; i < 12 && op.snapshot?.record.states.payment !== 'verified'; i++) { await new Promise(resolve => setTimeout(resolve, 5000)); await reconcile(op); setOp({ ...op }); }
       if (op.snapshot?.record.states.payment === 'verified' && op.envelope) { await execute(op); accept(op); setOp({ ...op }); }
@@ -83,15 +83,15 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
       <label htmlFor="checkout-contribution">{t.add}</label>
       <input id="checkout-contribution" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} disabled={busy || Boolean(op)} aria-describedby="checkout-sum-note" />
       <p id="checkout-sum-note">{t.amount}</p>
-      <div className="actions">{['10', '50', '100', '500', '1000'].map(value => <button type="button" className="btn ghost" key={value} disabled={busy || Boolean(op)} onClick={() => setAmount(value)}>{value} USDC</button>)}</div>
+      <div className="actions">{['0.001', '0.005', '0.01', '0.1', '1'].map(value => <button type="button" className="btn ghost" key={value} disabled={busy || Boolean(op)} onClick={() => setAmount(value)}>{value} SOL</button>)}</div>
     </>}
     {order && <dl>
-      <dt>{t.service}</dt><dd>{formatAmount(order.servicePayment.amount, 6)} USDC</dd>
+      <dt>{t.service}</dt><dd>{formatAmount(order.servicePayment.amount, 9)} SOL</dd>
       {order.servicePayment.amount !== '0' && <><dt>{t.recipient}</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.servicePayment.recipient}</dd></>}
-      <dt>{t.contribution}</dt><dd>{formatAmount(order.fundContribution.amount, 6)} USDC</dd>
+      <dt>{t.contribution}</dt><dd>{formatAmount(order.fundContribution.amount, 9)} SOL</dd>
       <dt>{t.recipient} — {t.fund}</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.fundContribution.recipient}</dd>
       <dt>{t.fee}</dt><dd>{prepared ? formatSol(prepared.feeLamports) : snapshot?.record.payment ? formatSol(snapshot.record.payment.feeLamports) : '—'} SOL</dd>
-      <dt>USDC</dt><dd>{formatAmount(order.total, 6)}</dd>
+      <dt>SOL</dt><dd>{formatAmount(order.total, 9)}</dd>
     </dl>}
     {!op?.signature && !op?.signingStarted && !verified && <div className="actions">
       <button type="button" className="btn ghost" onClick={() => check('Phantom')} disabled={busy}>Phantom — {t.prepare}</button>
@@ -99,13 +99,13 @@ export function CheckoutPublishPanel({ envelope, parentTxId = null, onBack, onBu
     </div>}
     {prepared && !op?.signature && !verified && <>
       <label><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} disabled={busy} /> {t.consent}</label>
-      <button type="button" className="btn" disabled={busy || !consent} onClick={finishPayment}>{t.pay} {order ? formatAmount(order.total, 6) : ''} USDC + {formatSol(prepared.feeLamports)} SOL</button>
+      <button type="button" className="btn" disabled={busy || !consent} onClick={finishPayment}>{t.pay} {order ? formatAmount(order.total, 9) : ''} SOL + {formatSol(prepared.feeLamports)} SOL</button>
     </>}
     {op && (op.signature || op.signingStarted || verified) && !complete && !(verified && !currentEnvelope) && <button type="button" className="btn" disabled={busy} onClick={resume}>{verified ? t.upload : t.resume}</button>}
     <div role="status" aria-live="polite">{complete ? t.complete : snapshot?.execution?.accepted ? t.accepted : verified ? (currentEnvelope ? t.verified : '') : op?.signature ? t.unknown : ''}</div>
     {verified && order?.fundContribution.amount !== '0' && <p>{t.thanks}</p>}
     {snapshot?.execution?.accepted && op && <button type="button" className="btn ghost" onClick={() => downloadReceipt(preservationReceipt(op))}>{t.receipt}</button>}
-    {verified && op && <button type="button" className="btn ghost" onClick={() => downloadJson({ schema: 'sejire/payment-receipt/v1', network: 'devnet', order: op.order, payment: op.snapshot?.record.payment }, `sejire-payment-${order?.id}.json`)}>USDC — {t.receipt}</button>}
+    {verified && op && <button type="button" className="btn ghost" onClick={() => downloadJson({ schema: 'sejire/payment-receipt/v1', network: 'devnet', order: op.order, payment: op.snapshot?.record.payment }, `sejire-payment-${order?.id}.json`)}>SOL — {t.receipt}</button>}
     {snapshot?.record.payment && <p><a href={`https://explorer.solana.com/tx/${snapshot.record.payment.signature}?cluster=devnet`} target="_blank" rel="noreferrer">Solana devnet</a></p>}
     {error && <p role="alert" style={{ overflowWrap: 'anywhere' }}>{error}</p>}
     <div className="actions"><button type="button" className="btn ghost" onClick={onBack} disabled={busy}>{t.back}</button>

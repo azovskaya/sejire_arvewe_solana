@@ -1,4 +1,4 @@
-# Проверочная версия: USDC → зашифрованный архив
+# Проверочная версия: SOL → зашифрованный архив
 
 01.10.2026. Это продолжение существующего SEJIRE, не новый продукт. Основной сайт,
 ArNS, main и production-секреты не изменяются. Подключение включается только
@@ -14,10 +14,12 @@ SQLite/Durable Object базой. Точный HTTPS URL определяетс�
 Проверки и сборки в CI ничего не публикуют.
 
 Нужны подтверждение владельца, доступ к тестовому Cloudflare и два **публичных**
-devnet-адреса (`CHECKOUT_SERVICE_RECIPIENT`, `CHECKOUT_FUND_RECIPIENT`). Их существующие
-classic SPL token accounts должны содержать именно devnet USDC mint
-`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`. Создание ATA внутри платежа не поддержано;
-подготовка счетов — отдельное согласуемое действие владельца.
+devnet-адреса (`CHECKOUT_SERVICE_RECIPIENT`, `CHECKOUT_FUND_RECIPIENT`). Используются native System transfers без SPL accounts и ATA. Публичные тестовые адреса:
+- услуга: `ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd`;
+- фонд: `Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN`;
+- отдельный uploader: `Fp6ZxyVLfXhpxbcvmiL5hPsr2uqDozuLaQ1jA3avrVPF`.
+Это disposable devnet wallets, не production-казна. Секреты вне Git, локально 600/700.
+Ранее созданный USDC token account не закрывается и в этом checkout не используется.
 
 Загрузчику нужен отдельный, не производственный **Solana test uploader signer**
 `CHECKOUT_UPLOAD_SIGNER` через защищённую настройку Cloudflare. Не присылать его в чат;
@@ -47,7 +49,7 @@ classic SPL token accounts должны содержать именно devnet U
 
 Маршруты: `POST /orders`, `GET /orders/:id`, `POST /orders/:id/prepare`,
 `POST /orders/:id/reserve`, `POST /orders/:id/verify`, `POST /orders/:id/reconcile`, `POST /orders/:id/execute`
-под `/api/checkout`. Условия — на сервере: devnet USDC, 3 USDC за сохранение,
+под `/api/checkout`. Условия — на сервере: devnet SOL, 0.03 SOL (30 000 000 lamports) за сохранение,
 нулевая цена услуги для отдельной поддержки, точные разные получатели,
 reference, 15 минут, версия политики. Нет продуктового потолка взноса;
 u64 и decimal precision — технические пределы. Поддержка не требует архива.
@@ -60,10 +62,11 @@ CF-Connecting-IP доверяется только на Cloudflare ingress; X-Fo
 Не выставлять этот ingress-адаптер за прокси, допускающим подмену CF-заголовка.
 CORS — точный allowlist; он не заменяет Bearer-авторизацию.
 
-До оплаты проверяются существующие SPL accounts, mint/owner/state/delegate,
-балансы, загрузчик и архив. Транзакция: legacy, один signer, только TransferChecked,
-reference и два раздельных назначения; без ATA/CPI/priority fee.
+До оплаты проверяются genesis, System recipient accounts, баланс суммы + комиссии,
+загрузчик и архив. Транзакция: legacy, один signer, один/два System transfer,
+reference и раздельные назначения; без ATA/CPI/priority fee. Суммы — integer lamports.
 Комиссия SOL проверяется через getFeeForMessage и показывается отдельно.
+Серверная цена фиксируется в заказе; смена политики не изменяет старые заказы.
 
 После подписи точные bytes и signature сохраняются до broadcast; сервер резервирует
 signature. Потеря ответа не запускает новый платёж. Возобновление сверяет прежний
@@ -95,10 +98,13 @@ signer проверен также внутри workerd; CommonJS built-ins и B
 получение файла пока NOT RUN. Preview BLOCKED: нет согласованного Cloudflare доступа,
 environment devnet-preview, публичных получателей и защищённой настройки загрузчика.
 
-Согласуемый начальный живой тест: обычное сохранение 3 test USDC, сохранение со взносом
-1 test USDC (итого 4), отдельный взнос 1 test USDC: максимум 8 test USDC суммарно.
-SOL fee проверяется и отдельно согласуется перед каждой подписью; дополнительные ATA
-и funding расходы не разрешены этим сценарием. Ни реальных денег, ни покупок токенов.
+Разрешённый начальный живой тест: обычное сохранение 0.03 devnet SOL;
+сохранение + 0.005 SOL (итого 0.035); отдельный взнос 0.005 SOL.
+Итого 0.07 SOL + три комиссии, фактический fee показывается до каждой подписи.
+Никаких крупных переводов, mainnet или покупки токенов. Payer:
+`Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF`.
+Публичное поступление 1 SOL и создание прежнего ATA finalized; новый SOL checkout
+ещё не проверен живым платежом. Локальный signer не заменяет Phantom acceptance.
 
 После публикации: открыть/создать дерево → «Сохранить» → «Сохранить через Solana» →
 скачать backup → Phantom/Solflare → проверить цену/взнос/получателей/SOL fee →

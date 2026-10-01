@@ -34,7 +34,7 @@ export default {
           const record = await new DurableOrderStore(env.CHECKOUT_LEDGER!).get(id) as StoredOrder;
           const transaction = fixtureTransaction(record.order, input.params[0] as string);
           transaction.blockTime = Math.ceil(record.order.createdAt / 1000) + 1;
-          if (mode === 'wrong-recipient') transaction.meta.preTokenBalances[1].owner = transaction.meta.postTokenBalances[1].owner = addr(91);
+          if (mode === 'wrong-recipient') transaction.transaction.message.accountKeys[1] = addr(91);
           if (mode === 'failed') transaction.meta.err = { InstructionError: [0, 'Custom'] };
           result = transaction;
         }
