@@ -1,3 +1,7 @@
+[Открыть SEJIRE — проверочная версия](https://azovskaya.github.io/sejire_arweave_solana/native-admin/) · [Открыть админку](https://azovskaya.github.io/sejire_arweave_solana/native-admin/#/admin)
+
+Публичная статическая проверочная версия. Конфигурация импортируется с проверкой подписей; данные браузера не синхронизируются между компьютерами. Mainnet-отправка и публикация конфигурации выключены.
+
 # SEJIRE · Solana preservation prototype
 
 Build a family tree. Preserve an encrypted archive with your own recovery words.

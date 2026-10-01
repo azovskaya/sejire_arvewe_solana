@@ -4,6 +4,8 @@ The new path uses native SOL payments and **Arweave format-2 transactions** thro
 
 ## Open and configure
 
+Public temporary preview: https://azovskaya.github.io/sejire_arweave_solana/native-admin/ and admin https://azovskaya.github.io/sejire_arweave_solana/native-admin/#/admin . No local server or GitHub visitor account is required. IndexedDB remains a device-local cache; on another computer import the signed configuration/workspace and independently trusted genesis fingerprint. No configuration has been published in Arweave by this deployment. The Pages workflow verifies the accepted build artifact SHA/digest, preserves the existing Pages tree, and checks the actual public interface with no network fixtures. Mainnet broadcast and configuration publication stay disabled.
+
 Use the Ubuntu CI `native-admin-build` artifact, extract the static files and serve them with an ordinary local HTTP server. Open `http://localhost:4173/#/admin`. This does not publish a site. In a supported development environment: `npm ci --prefix apps/web`, `npm ci --prefix apps/sponsor`, `npm run native:dev`, then `http://127.0.0.1:5173/#/admin`. Catalina modern Vite binaries remain unsupported; do not replace global tools.
 
 In **Кошельки**, enter public addresses for Основная казна SEJIRE (SOL service income), Фонд памяти поколений SEJIRE (SOL contributions), and AR-резерв основной казны SEJIRE (separate operational AR). SOL and AR networks are separate. There is no automatic SOL→AR conversion. Default devnet recipients are test-only; they are rejected as mainnet recipients. The mainnet test wallet from the previous preflight is not automatically assigned a role.
