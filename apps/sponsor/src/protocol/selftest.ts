@@ -66,6 +66,7 @@ try{
   await assert.rejects(p.engine.submit({message:full,signatures:[p.managers[0].sign(full)]}));
   await p.engine.submit({message:full,signatures:p.managers.slice(0,2).map(s=>s.sign(full))});
   assert.equal(p.engine.journal.state.policy.epoch,1);
+  await p.engine.restore(p.engine.export(),p.engine.journal.checkpoint());
   await assert.rejects(p.engine.submit(create));
   for(const action of ['Eval','Owner','SetAuthorities'])await assert.rejects(p.engine.submit({message:{...m,action:action as 'Policy'},signatures:p.managers.slice(0,2).map(s=>s.sign({...m,action}))}));
  });

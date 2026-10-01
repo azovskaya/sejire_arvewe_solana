@@ -28,7 +28,7 @@ export default defineConfig({
     alias: [{ find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
   },
   optimizeDeps: {
-    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes"],
+    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519"],
   },
   build: {
     commonjsOptions: {

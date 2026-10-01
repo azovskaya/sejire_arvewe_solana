@@ -1,6 +1,6 @@
 import { createHash, createPublicKey, verify } from 'node:crypto';
 import bs58 from 'bs58';
-import { assertOrder, type Order } from '../../../../packages/checkout/order';
+import { assertOrder, createOrder, type Order } from '../../../../packages/checkout/order';
 import { validatePayment, type TransactionEvidence } from '../checkout/paymentValidator';
 import { DEVNET_GENESIS } from '../checkout/rpcReader';
 import { DOMAIN, canonical } from '../../../../packages/protocol/wire';
@@ -39,7 +39,7 @@ export async function apply(input:State,event:Signed,g:Genesis):Promise<State>{
  const keys=verifiedKeys(m,event.signatures),b=m.body;
  if(m.action==='Policy'){threshold(keys,p);const next=b.policy as Policy;validatePolicy(next);if(next.epoch!==p.epoch+1)throw Error('policy_epoch');threshold(verifiedKeys({...m,body:{policy:next}},b.acceptance as Signed['signatures']),next);s.policy=structuredClone(next);return s;}
  if(m.action==='Order'){
-  const order=b.order as Order;assertOrder(order);if(keys.length!==1||keys[0]!==order.payer)throw Error('order_signature');
+  const order=b.order as Order;assertOrder(order);if(canonical(order)!==canonical(createOrder({...order,asset:order.asset.symbol})))throw Error('order_extra_fields');if(keys.length!==1||keys[0]!==order.payer)throw Error('order_signature');
   if(order.network!==g.network||order.asset.symbol!=='SOL'||order.policyVersion!==p.version||order.servicePayment.recipient!==p.serviceRecipient||order.fundContribution.recipient!==p.fundRecipient||order.servicePayment.amount!==(order.kind==='preservation'?p.serviceLamports:'0')||Object.keys(order).some(k=>!['schema','total','networkFee','id','kind','network','asset','payer','reference','createdAt','expiresAt','policyVersion','servicePayment','fundContribution','archive'].includes(k))||typeof b.accessHash!=='string'||!/^[a-f0-9]{64}$/.test(b.accessHash))throw Error('order_policy');
   const previous=s.orders[order.id];if(previous){if(hash({order:previous.order,accessHash:previous.accessHash})!==hash(b))throw Error('order_conflict');return s;}
   if(s.references[order.reference])throw Error('reference_reuse');s.references[order.reference]=order.id;s.orders[order.id]={order,accessHash:b.accessHash,conflicts:[]};return s;

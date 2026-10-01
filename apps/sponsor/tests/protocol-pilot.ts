@@ -37,6 +37,6 @@ export async function pilot(persist:(value:Export)=>Promise<void>=async()=>{}){
   }
   const bytes=control.items.get(String(url).split('/').at(-1)!);return !control.retrievable||!bytes?new Response('',{status:404}):new Response(bytes);
  });
- engine=new ProtocolExecutor(genesis,hash(genesisPayload(genesis)),managers.slice(0,2),persist,reader,uploader,observers[0],executors[0]);
+ engine=new ProtocolExecutor(genesis,hash(genesisPayload(genesis)),managers,persist,reader,uploader,observers[0],executors[0]);
  return {engine,genesis,managers,observers,executors,control,reader,uploader,persist};
 }
