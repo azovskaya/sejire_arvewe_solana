@@ -15,8 +15,8 @@ Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 const payer=signingKey(new Uint8Array(32).fill(17)),cap=signingKey(new Uint8Array(32).fill(18));
 const token=Buffer.from(new Uint8Array(32).fill(18)).toString('hex');
 const temp=await mkdtemp(join(tmpdir(),'sejire-protocol-'));const file=join(temp,'signed-journal.json');
-let last:Export|undefined,fail=false;
-const p=await pilot(async saved=>{if(fail)throw Error('before_commit');await writeFile(file,JSON.stringify(saved));last=saved;});
+let last:Export|undefined,fail=false,failAfter=false;
+const p=await pilot(async saved=>{if(fail)throw Error('before_commit');await writeFile(file,JSON.stringify(saved));last=saved;if(failAfter)throw Error('lost_commit_response');});
 let passed=0;const test=async(name:string,fn:()=>Promise<unknown>|unknown)=>{await fn();passed++;console.log('PASS protocol: '+name);};
 const message=(action:Signed['message']['action'],body:Record<string,unknown>,signer=payer)=>p.engine.signed(action,body,signer);
 const plaintext={schema:'sejire/vault/v1',vault_id:'a'.repeat(32),trees:{a:{persons:{p:{name:'Synthetic parent'},c:{name:'Synthetic child',parents:['p']}},history:['first','correction']},b:{persons:{q:{name:'Synthetic other'}},history:['first']}},active_tree_id:'a'};
@@ -36,6 +36,10 @@ try{
  await test('unauthorized capability cannot reserve or block foreign order',async()=>{await assert.rejects(p.engine.reserve(order.id,sig(6),'00'.repeat(32)));assert.equal(p.engine.journal.state.orders[order.id].pendingSignature,undefined);});
  await test('atomic failure before commit leaves no pending operation',async()=>{fail=true;await assert.rejects(p.engine.reserve(order.id,sig(5),token));fail=false;assert.equal(p.engine.journal.state.orders[order.id].pendingSignature,undefined);await p.engine.restore(last!,last!.checkpoint);});
  await test('unknown RPC keeps one pending signature, cannot replace it',async()=>{await p.engine.reserve(order.id,sig(5),token);p.control.missing=true;await p.engine.reconcile(order.id,token);await assert.rejects(p.engine.reserve(order.id,sig(6),token));assert.equal(p.engine.journal.state.orders[order.id].pendingSignature,sig(5));p.control.missing=false;});
+ await test('replacement observer continues pending operation without first observer key',async()=>{
+  const saved=p.engine.export();const other=new ProtocolExecutor(p.genesis,p.engine.journal.creationHash,p.managers,async()=>{},p.reader,p.uploader,p.observers[1],p.executors[1]);
+  await other.restore(saved,saved.checkpoint);await other.reconcile(order.id,token);assert.equal(other.journal.state.orders[order.id].payment?.signature,sig(5));
+ });
  await test('parallel verified attestations produce one service and fund credit',async()=>{await Promise.all(Array.from({length:16},()=>p.engine.reconcile(order.id,token)));assert.deepEqual(p.engine.journal.state.totals,{servicePayment:'30000000',fundContribution:'5000000'});});
  await test('public JSON From is not observer authority',async()=>{const evidence=decodeTransaction(fixtureTransaction(order,sig(5)),sig(5),fixtureChain);await assert.rejects(p.engine.submit(message('Payment',{orderId:order.id,orderHash:hash(order),evidence,From:p.observers[0].publicKey},payer)));});
  await test('no SQLite: saved signed journal replays identical state without RPC',async()=>{
@@ -78,6 +82,12 @@ try{
    await big.engine.reserve(o.id,sig(40+i),token);await big.engine.reconcile(o.id,token);
   }
   assert.equal(big.engine.journal.state.totals.fundContribution,'36893488147419103230');
+ });
+ await test('lost commit response freezes writes until durable history is reconciled, no second credit',async()=>{
+  failAfter=true;await assert.rejects(p.engine.reserve(order.id,sig(5),token));failAfter=false;
+  await assert.rejects(p.engine.reserve(order.id,sig(5),token),/journal_publication_requires_reconciliation/);
+  const committed=JSON.parse(await readFile(file,'utf8')) as Export;await p.engine.restore(committed,committed.checkpoint);
+  assert.equal(p.engine.journal.state.totals.servicePayment,'30000000');assert.equal(p.engine.journal.state.orders[order.id].pendingSignature,sig(5));
  });
  await test('HTTP adapter cannot expose commit, fault or unsigned payment proof',async()=>{
   const handler=protocolHttp(p.engine,'https://local.example',true);

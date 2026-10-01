@@ -21,10 +21,14 @@ try{
  const order=createOrder({id:'1'.repeat(32),kind:'contribution',network:'devnet',asset:'SOL',payer:payer.publicKey,reference:addr(4),createdAt:1000000,expiresAt:1100000,policyVersion:p.genesis.policy.version,servicePayment:{amount:'0',recipient:addr(2)},fundContribution:{amount:'5000000',recipient:addr(3)}});
  await p.engine.submit(p.engine.signed('Order',{order,accessHash:hash(cap.publicKey)},payer));
  await p.engine.reserve(order.id,sig(5),Buffer.from(new Uint8Array(32).fill(18)).toString('hex'));
+ await p.engine.reconcile(order.id,Buffer.from(new Uint8Array(32).fill(18)).toString('hex'));
+ const pending=createOrder({...order,id:'2'.repeat(32),asset:'SOL',reference:addr(7)});
+ await p.engine.submit(p.engine.signed('Order',{order:pending,accessHash:hash(cap.publicKey)},payer));
+ await p.engine.reserve(pending.id,sig(6),Buffer.from(new Uint8Array(32).fill(18)).toString('hex'));
  const saved=p.engine.export(),journal=join(temp,'journal.json'),trust=join(temp,'trust.json'),output=join(temp,'state.json');
  await writeFile(journal,JSON.stringify(saved));await writeFile(trust,JSON.stringify({creationHash:p.engine.journal.creationHash,checkpoint:saved.checkpoint}));
  run('replay-journal',[journal,trust,output]);assert.deepEqual(JSON.parse(await readFile(output,'utf8')),p.engine.journal.state);
- console.log('PASS continuation: fresh Node process, no SQLite/network/npm/GitHub, pending signature preserved');
+ console.log('PASS continuation: fresh Node process, no SQLite/network/npm/GitHub, credited and pending orders preserved');
  // Public standard test mnemonic, never used for wallets or real archives.
  const words='abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
  const keys=deriveKeysFromMnemonic(words);const vault={trees:{a:{persons:{p:{id:'p'},c:{id:'c',parents:['p']}},history:['created','corrected']},b:{persons:{q:{id:'q'}},history:['created']}},active_tree_id:'a'};
