@@ -1,3 +1,7 @@
+## 2026-10-01: живой AO readiness
+
+[Публичные результаты](verification/2026-10-01-ao-readiness.json): finalized payer balance проверен; devnet расходы разрешены. MU вернул 500, CU — 403 whitelist; AO process creation НЕ подтверждено. Подписанные байты попытки и новый test-only RSA signer сохранены вне Git в защищённом `.sejire-devnet`. Не создавать новый process ID вслепую; сперва сверить candidate и доступ CU/scheduler. `scripts/ao-live-readiness.mjs --execute` повторяет те же подписанные байты; `--selftest` не читает локальные ключи и не обращается к сети. Это readiness-процесс, НЕ платёжный журнал; его bootstrap не заменяет реализацию live journal gate. Полный AO/Solana/upload путь остаётся NOT RUN. Нужен доступ тестового процесса к работающему AO CU; облачный деплой не нужен.
+
 # 2026-10-01: направление продолжения
 
 Обязательный Cloudflare preview приостановлен владельцем. Новый локальный signed-journal пилот и переносимое восстановление: [PROTOCOL_CONTINUATION.md](PROTOCOL_CONTINUATION.md). Старые адаптеры сохранены; живой AO immutable runtime еще не доказан. Не запускать Cloudflare/ArNS/mainnet публикации. Следующие разделы описывают прежние проверки и не заменяют это уточнение.

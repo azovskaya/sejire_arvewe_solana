@@ -26,6 +26,8 @@ jobs:
       - run: npm run test:sqlite
       - run: npm run test:api
       - run: npm run test:protocol
+      - name: AO readiness signer selftest (offline, no secrets or network)
+        run: node scripts/ao-live-readiness.mjs --selftest
       - name: Local Lua boundary checks (not a live AO process)
         run: |
           sudo apt-get update
