@@ -2,13 +2,12 @@ name: Publish native SEJIRE preview to GitHub Pages
 
 # Only the temporary Pages preview is published. Arweave/ArNS are not touched.
 on:
-  push:
-    branches: [feat/solana-preservation]
-    paths:
-      - '.github/workflows/pages.yml'
-      - 'scripts/pages-native-artifact.mjs'
-      - 'scripts/verify-public-native.mjs'
   workflow_dispatch:
+    inputs:
+      checked_run:
+        description: 'Successful SEJIRE checks run for this exact source commit'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -38,6 +37,7 @@ jobs:
       - name: Recover and verify the accepted native build; preserve existing Pages files
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKED_RUN: ${{ inputs.checked_run }}
         run: node scripts/pages-native-artifact.mjs
       - name: Save Pages content without rewriting its history
         run: |
@@ -45,7 +45,7 @@ jobs:
           git -C .pages-site config user.email 'sejire-pages@users.noreply.github.com'
           git -C .pages-site add -- native-admin
           if ! git -C .pages-site diff --cached --quiet; then
-            git -C .pages-site commit -m 'Publish verified native admin 1fe27a9 in native-admin/'
+            git -C .pages-site commit -m "Publish verified native admin ${GITHUB_SHA} in native-admin/"
             git -C .pages-site push origin HEAD:gh-pages
           fi
           mkdir .pages-public

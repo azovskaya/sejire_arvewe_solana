@@ -2,6 +2,14 @@
 
 The new path uses native SOL payments and **Arweave format-2 transactions** through the already installed arweave-js 1.15.7. No Turbo credits/payment/upload API or mandatory cloud account is used by this path. Legacy Turbo reads, receipts and the previous optional payment path remain compatible. The earlier Turbo preflight is historical and its quote does not apply here.
 
+## Owner interface
+
+The first screen is **SEJIRE → Центр управления**. New installations see a six-step setup wizard (network, Phantom manager, SOL service treasury, SOL contribution fund, AR reserve, review). Creating your own genesis signs the unchanged configuration and explicit acceptance, verifies both, and downloads `sejire-trust-anchor.json`. Keep this public trust file separately from the signed configuration. This is your own local configuration, not global ownership or Arweave publication.
+
+For an existing project, import an independently obtained trust file and the signed configuration; never accept an unknown chain merely because its hash is supplied beside it. The Overview shows only checked public balances and verified imported-job accounting; missing values say “Нет данных”/“Не проверено”. Device-local counts are labeled and are not a global service dashboard. Manager confirmation uses a signed, nonce-bound UI challenge; all actual changes still require the previous authority threshold. Address/price changes affect only new orders.
+
+Wallet roles are separate cards. Settings and wallet replacements produce drafts, never automatic fund movement. Orders use a table and archives show separate payment/sign/upload/inclusion/hash stages. AR quotes are displayed in AR; SOL is never automatically converted. Availability still means the existing time-limited manual declaration, not a new scheduler. **Расширенные настройки** is closed by default and retains trust hashes, JSON/chain imports and exports, RPC/nodes, raw budget/history, IDs and gateway selection. The manual queue, signed config model and direct format-2 path are unchanged.
+
 ## Open and configure
 
 Public temporary preview: https://azovskaya.github.io/sejire_arweave_solana/native-admin/ and admin https://azovskaya.github.io/sejire_arweave_solana/native-admin/#/admin . No local server or GitHub visitor account is required. IndexedDB remains a device-local cache; on another computer import the signed configuration/workspace and independently trusted genesis fingerprint. No configuration has been published in Arweave by this deployment. The Pages workflow verifies the accepted build artifact SHA/digest, preserves the existing Pages tree, and checks the actual public interface with no network fixtures. Mainnet broadcast and configuration publication stay disabled.
