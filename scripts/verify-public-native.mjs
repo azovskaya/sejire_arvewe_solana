@@ -14,7 +14,7 @@ assert(ready,'Published build provenance was not reachable');
 const browser=await chromium.launch();const errors=[],failed=[],local=[];const contexts=[];
 try{
  for(let i=0;i<2;i++){
-  const context=await browser.newContext();contexts.push(context);const page=await context.newPage();
+  const context=await browser.newContext({locale:'ru-RU'});contexts.push(context);const page=await context.newPage();
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('requestfailed',r=>failed.push({url:r.url(),reason:r.failure()?.errorText}));
