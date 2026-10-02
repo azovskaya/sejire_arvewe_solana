@@ -116,9 +116,9 @@ test('network failure never invents a treasury balance or readiness',async({page
 
 test('public balances never wait for history and history failure preserves them',async({page})=>{
  await fixtures(page);const v=await setup(page);await importConfig(page,v);let history=0;
- await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getSignaturesForAddress'){history++;return route.fulfill({status:503,body:'history unavailable'});}await route.fallback();});
+ await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getSignaturesForAddress'){history++;return;}await route.fallback();});
  await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();const card=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})});await expect(card).toContainText('1 SOL');expect(history).toBe(0);
- await advanced(page);await page.getByRole('button',{name:'Загрузить историю основной казны',exact:true}).click();await expect(page.getByRole('alert')).toContainText('rpc-server-error');await expect(card).toContainText('1 SOL');expect(history).toBe(1);
+ await advanced(page);await page.getByRole('button',{name:'Загрузить историю основной казны',exact:true}).click();await expect(card).toContainText('1 SOL');await expect(page.getByRole('alert')).toContainText('rpc-timeout',{timeout:15000});await expect(card).toContainText('1 SOL');expect(history).toBe(1);
 });
 test('HTTP 429 is diagnosed separately; other treasury and AR remain visible',async({page})=>{
  await fixtures(page);const v=await setup(page);await importConfig(page,v);
