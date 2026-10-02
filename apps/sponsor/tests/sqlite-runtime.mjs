@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -130,6 +130,26 @@ if (!process.argv[2]) {
         await assert.rejects(async () => { const r = await wrong.fetch('https://ledger.internal/', { method: 'POST', body: JSON.stringify({ action: 'create', order: order('9', 19) }) }); if (!r.ok) throw new Error('wrong_ledger_object'); });
       });
     } else throw new Error('unknown_phase');
+    // Frozen public evidence from actual devnet; CI reuses it OFFLINE, not a live payment.
+    const liveCases = JSON.parse(await readFile(resolve(here, '../../../docs/verification/2026-10-02-native-devnet-public.json'), 'utf8')).transactions;
+    await test('saved real devnet payments: disk commit/reopen/repeat yields one credit per purpose', async () => {
+      for (const item of liveCases) {
+        if (phase === 'write') {
+          await call({action:'create', order:item.order});
+          await call({action:'begin', id:item.order.id, signature:item.signature});
+          const results = await Promise.all(Array.from({length:8},()=>call({action:'commit',payment:item.payment})));
+          assert.equal(results.filter(r=>r.status==='credited').length,1);
+          assert.equal(results.filter(r=>r.status==='already-credited').length,7);
+        } else {
+          const saved = await call({action:'get',id:item.order.id});
+          assert.deepEqual(saved.order,item.order);assert.deepEqual(saved.payment,item.payment);
+          assert.equal((await call({action:'commit',payment:item.payment})).status,'already-credited');
+        }
+      }
+      const totals=await call({action:'totals'});
+      const solTotals=Object.fromEntries(Object.entries(totals).filter(([k])=>k.includes(':SOL:')));
+      assert.deepEqual(Object.values(solTotals).sort(),['10000000','60000000']);
+    });
     await writeFile(resolve(persist, `${phase}.json`), JSON.stringify({ phase, passed, runtime: 'Miniflare/workerd SQLite on disk', synthetic: true }));
     console.log(`sqlite ${phase}: ${passed} scenarios PASS`);
   } finally { await runtime.dispose(); }
