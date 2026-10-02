@@ -7,6 +7,10 @@ const base = 'http://127.0.0.1:5173';
 const b58 = fill => bs58.encode(new Uint8Array(32).fill(fill));
 let runtime, temp, protocol;
 const protocolMode=process.env.SEJIRE_PROTOCOL_TEST==='1';
+test.beforeEach(async ({page}) => {
+  page.on('pageerror', error => console.error('checkout pageerror:', error.message));
+  page.on('requestfailed', request => console.error('checkout requestfailed:', request.url(), request.failure()?.errorText));
+});
 test.beforeAll(async () => {
   temp = await mkdtemp(resolve(tmpdir(), 'sejire-browser-'));
   if(protocolMode){
