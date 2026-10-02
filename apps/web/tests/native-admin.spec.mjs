@@ -113,3 +113,24 @@ test('signed address rotation preserves old order and RPC payment recipients',as
 test('network failure never invents a treasury balance or readiness',async({page})=>{
  await fixtures(page);const v=await setup(page);await importConfig(page,v);await page.route('https://api.devnet.solana.com*',route=>route.fulfill({status:429,body:'rate limited'}));await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();await expect(page.locator('.admin-status')).toContainText('Ошибка сети');await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})})).toContainText('Нет данных');
 });
+
+test('public balances never wait for history and history failure preserves them',async({page})=>{
+ await fixtures(page);const v=await setup(page);await importConfig(page,v);let history=0;
+ await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getSignaturesForAddress'){history++;return route.fulfill({status:503,body:'history unavailable'});}await route.fallback();});
+ await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();const card=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})});await expect(card).toContainText('1 SOL');expect(history).toBe(0);
+ await advanced(page);await page.getByRole('button',{name:'Загрузить историю основной казны',exact:true}).click();await expect(page.getByRole('alert')).toContainText('rpc-server-error');await expect(card).toContainText('1 SOL');expect(history).toBe(1);
+});
+test('HTTP 429 is diagnosed separately; other treasury and AR remain visible',async({page})=>{
+ await fixtures(page);const v=await setup(page);await importConfig(page,v);
+ await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getBalance'&&p.params[0]===v.config.wallets.service)return route.fulfill({status:429,headers:{'Retry-After':'60'},body:'rate limited'});await route.fallback();});
+ await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'Фонд памяти поколений',exact:true})})).toContainText('1 SOL');await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'AR-резерв',exact:false})})).toContainText('0.0000001 AR');await expect(page.locator('.admin-alert')).toContainText('rpc-rate-limited');await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})})).toContainText('Нет данных');await advanced(page);await expect(page.locator('pre').filter({hasText:'diagnostics'})).toContainText('429');
+});
+test('wrong genesis rejects SOL balances without hiding AR',async({page})=>{
+ await fixtures(page);const v=await setup(page);await importConfig(page,v);let balances=0;
+ await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getGenesisHash')return route.fulfill({json:{jsonrpc:'2.0',id:p.id,result:'wrong-genesis'}});if(p.method==='getBalance')balances++;await route.fallback();});
+ await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();await expect(page.locator('.admin-status')).toContainText('Ошибка сети');await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})})).toContainText('Нет данных');await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'AR-резерв',exact:false})})).toContainText('0.0000001 AR');expect(balances).toBe(0);
+});
+test('real deadline reports timeout; second balance appears before timeout; stale value is marked',async({page})=>{
+ await fixtures(page);const v=await setup(page);await importConfig(page,v);await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();const service=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Основная казна SEJIRE',exact:true})});await expect(service).toContainText('1 SOL');await expect(page.getByRole('button',{name:'Проверить состояние системы',exact:true})).toBeEnabled();
+ await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getBalance'&&p.params[0]===v.config.wallets.service)return;await route.fallback();});await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();await expect(page.getByRole('article').filter({has:page.getByRole('heading',{name:'Фонд памяти поколений',exact:true})})).toContainText('1 SOL');await expect(page.locator('.admin-alert')).toContainText('rpc-timeout',{timeout:25000});await expect(service).toContainText('1 SOL');await expect(service).toContainText('обновить не удалось');
+});

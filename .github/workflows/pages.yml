@@ -61,7 +61,9 @@ jobs:
           npm ci --prefix apps/web
           npm exec --prefix apps/web -- playwright install --with-deps chromium
       - name: Verify actual public HTTPS application in fresh browser contexts
-        run: node scripts/verify-public-native.mjs
+        run: |
+          node scripts/verify-public-native.mjs
+          node scripts/verify-public-sol-balances.mjs .pages-evidence/live-sol-balances.json
       - name: Preserve public browser evidence
         if: always()
         uses: actions/upload-artifact@v4

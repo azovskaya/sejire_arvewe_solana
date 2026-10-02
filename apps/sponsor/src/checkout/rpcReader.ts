@@ -31,9 +31,9 @@ export class SolanaRpcReader implements TrustedTransactionReader {
     try {
       const response = await this.transport(this.endpoint, { method: 'POST', redirect: 'error', signal: controller.signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
-      if (response.status === 429) throw new RpcEvidenceError('rpc-rate-limited');
-      if (response.status >= 500) throw new RpcEvidenceError('rpc-server-error');
-      if (!response.ok) throw new RpcEvidenceError('rpc-unavailable');
+      if (response.status === 429) throw new RpcEvidenceError('rpc-rate-limited',{httpStatus:429,retryAfterMs:retryDelay(response.headers.get('Retry-After'))});
+      if (response.status >= 500) throw new RpcEvidenceError('rpc-server-error',{httpStatus:response.status});
+      if (!response.ok) throw new RpcEvidenceError('rpc-unavailable',{httpStatus:response.status});
       // Bound bytes before JSON parse; applies to RPC evidence, never to archive size/contribution.
       if (!response.body) throw new RpcEvidenceError('rpc-malformed');
       const reader = response.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
@@ -54,7 +54,7 @@ export class SolanaRpcReader implements TrustedTransactionReader {
       if (payload.jsonrpc !== '2.0' || payload.id !== id) throw new RpcEvidenceError('rpc-malformed');
       if (payload.error !== undefined) {
         const error = object(payload.error);
-        throw new RpcEvidenceError(error.code === -32015 ? 'unsupported-transaction' : 'rpc-unavailable');
+        throw new RpcEvidenceError(error.code === -32015 ? 'unsupported-transaction' : 'rpc-unavailable',{httpStatus:response.status,rpcCode:typeof error.code==='number'?error.code:undefined});
       }
       if (!Object.hasOwn(payload, 'result')) throw new RpcEvidenceError('rpc-malformed');
       return payload.result;
@@ -86,3 +86,5 @@ export class SolanaRpcReader implements TrustedTransactionReader {
     return evidence;
   }
 }
+
+function retryDelay(value:string|null):number|undefined {if(value===null)return undefined;const seconds=Number(value);if(Number.isFinite(seconds)&&seconds>=0)return seconds*1000;const date=Date.parse(value);return Number.isFinite(date)?Math.max(0,date-Date.now()):undefined;}

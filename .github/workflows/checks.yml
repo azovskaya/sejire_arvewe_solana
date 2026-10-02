@@ -55,6 +55,12 @@ jobs:
           path: apps/web/dist/
           retention-days: 14
       - run: npm run test:native-browser
+      - name: Read-only live Solana requests from public Pages browser
+        run: node scripts/verify-public-sol-balances.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-sol-read-diagnostics
+          path: .cache/public-sol-read/
       - run: npm run continuation:package
       - run: npm run test:continuation
       - uses: actions/upload-artifact@v4

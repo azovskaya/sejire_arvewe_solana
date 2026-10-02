@@ -5,9 +5,9 @@ import { validatePayment } from '../../../../../apps/sponsor/src/checkout/paymen
 import type { Order } from '../../../../../packages/checkout/order';
 import { assertBase58 } from '../../../../../packages/checkout/order';
 import { endpoint, GENESIS, type Config } from './config';
-export async function rpc<T>(url:string,method:string,params:unknown[]=[],transport:typeof fetch=fetch):Promise<T> {
+export async function rpc<T>(url:string,method:string,params:unknown[]=[],transport:typeof fetch=fetch,onResponse?:(status:number)=>void):Promise<T> {
  // Reuse existing bounded JSON/timeout/status validation; only routing differs in this optional public adapter.
- const reader = new SolanaRpcReader({network:'devnet'},(_ignored,init)=>transport(endpoint(url),init));
+ const reader = new SolanaRpcReader({network:'devnet'},async(_ignored,init)=>{const response=await transport(endpoint(url),init);onResponse?.(response.status);return response;});
  return await reader.rpc(method,params) as T;
 }
 export async function onRpc<T>(c:Config,action:(url:string)=>Promise<T>):Promise<T> {
@@ -34,6 +34,24 @@ export async function verifyPaymentRpc(c:Config,order:Order,signature:string) {
   return {evidence,payment:validatePayment(order,evidence,chain),rpc:url,checkedAt:new Date().toISOString()};
  });
 }
+const balanceGenesisInFlight=new Map<string,Promise<{value:unknown;httpStatus?:number}>>();
+export async function walletBalance(c:Config,address:string,diagnostics:(entry:BalanceDiagnostic)=>void=()=>{}) {
+ assertBase58(address,32);
+ let last:unknown=Error('rpc_unavailable');
+ for(const url of c.solanaRpcs){
+  for(let attempt=0;attempt<2;attempt++){
+   const call=async <T>(method:string,params:unknown[]=[])=>{const start=Date.now();let httpStatus:number|undefined;const request=async()=>({value:await rpc(url,method,params,fetch,status=>{httpStatus=status;}),httpStatus});try{let pending:Promise<{value:unknown;httpStatus?:number}>;if(method==='getGenesisHash'){const existing=balanceGenesisInFlight.get(url);pending=existing??request();if(!existing){balanceGenesisInFlight.set(url,pending);void pending.finally(()=>balanceGenesisInFlight.delete(url)).catch(()=>{});}}else pending=request();const response=await pending;httpStatus=response.httpStatus;const value=response.value as T;diagnostics({endpoint:url,method,durationMs:Date.now()-start,status:'ok',httpStatus,at:Date.now()});return value;}catch(error){const e=error as Error & {details?:{httpStatus?:number;rpcCode?:number;retryAfterMs?:number}};diagnostics({endpoint:url,method,durationMs:Date.now()-start,status:e.message??'rpc-unavailable',httpStatus,...e.details,at:Date.now()});throw error;}};
+   try{if(await call('getGenesisHash')!==GENESIS[c.environment]){diagnostics({endpoint:url,method:'getGenesisHash',durationMs:0,status:'wrong-network',at:Date.now()});throw Error('wrong-network');}
+    const balance=await call<{value:number}>('getBalance',[address,{commitment:'finalized'}]);if(!Number.isSafeInteger(balance.value)||balance.value<0)throw Error('unsafe_rpc_balance');return {lamports:String(balance.value),checkedAt:Date.now(),endpoint:url};
+   }catch(error){last=error;const e=error as Error & {details?:{retryAfterMs?:number}};const delay=e.details?.retryAfterMs??500;
+    if(attempt!==0||!['rpc-rate-limited','rpc-timeout','rpc-unavailable','rpc-server-error'].includes(e.message)||delay>2000)break;
+    await new Promise(resolve=>setTimeout(resolve,Math.max(500,delay)));
+   }
+  }
+ }
+ throw last;
+}
+export type BalanceDiagnostic={endpoint:string;method:string;durationMs:number;status:string;at:number;httpStatus?:number;rpcCode?:number;retryAfterMs?:number};
 export async function walletHistory(c:Config,address:string) {
  assertBase58(address,32);
  return onRpc(c,async url=>{
