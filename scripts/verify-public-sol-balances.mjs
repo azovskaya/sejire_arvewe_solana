@@ -10,7 +10,7 @@ try{
   const endpoint='https://api.devnet.solana.com',genesis='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',entries=[];let id=0;
   async function call(method,params=[]){const start=Date.now(),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);let httpStatus,rpcCode,retryAfter;
    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:++id,method,params}),signal:controller.signal});httpStatus=response.status;retryAfter=response.headers.get('Retry-After');const data=await response.json();rpcCode=data.error?.code;entries.push({method,endpoint,durationMs:Date.now()-start,httpStatus,rpcCode,retryAfter,status:response.ok&&!data.error?'ok':'error',result:data.result});return data.result;
-   }catch(error){entries.push({method,endpoint,durationMs:Date.now()-start,httpStatus,rpcCode,status:controller.signal.aborted?'timeout':'network-failure',error:String(error)});}finally{clearTimeout(timer);}
+   }catch(error){entries.push({method,endpoint,durationMs:Date.now()-start,httpStatus,rpcCode,status:controller.signal.aborted?'timeout':httpStatus!==undefined?'invalid-json':'network-failure',error:String(error)});}finally{clearTimeout(timer);}
   }
   const networkVerified=(await call('getGenesisHash'))===genesis;
   for(const address of ['ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd','Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN'])await call('getBalance',[address,{commitment:'finalized'}]);
