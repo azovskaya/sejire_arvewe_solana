@@ -77,6 +77,22 @@ try {
   assert(isGatewayUnavailable(e), "all data hosts down");
 }
 
+for (const status of [429, 500, 503]) {
+  globalThis.fetch = async () => new Response("unavailable", { status });
+  let failed = false;
+  try { await fetchTxJson("existing-vault"); } catch (e) { failed = isGatewayUnavailable(e); }
+  assert(failed, `HTTP ${status} must not mean absent vault`);
+}
+globalThis.fetch = async () => new Response("not JSON", { status: 200 });
+let invalidFailed = false;
+try { await fetchTxJson("existing-vault"); } catch (e) { invalidFailed = isGatewayUnavailable(e); }
+assert(invalidFailed, "malformed gateway response must not mean absence");
+globalThis.fetch = async (input) => new Response("missing", { status: String(input).includes("arweave.net") ? 404 : 503 });
+let mixedFailed = false;
+try { await fetchTxJson("existing-vault"); } catch (e) { mixedFailed = isGatewayUnavailable(e); }
+assert(mixedFailed, "mixed 404 and 503 is inconclusive");
+globalThis.fetch = async () => new Response("missing", { status: 404 });
+assert(await fetchTxJson("absent") === null, "all 404 means absent");
 globalThis.fetch = origFetch;
 
 console.log("gateways.selftest: OK", {

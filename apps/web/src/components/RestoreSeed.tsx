@@ -2,9 +2,13 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
 import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
-import type { EnvelopeV1 } from "../lib/crypto/encrypt";
-import { parseSeedBackup } from "../lib/crypto/seedBackup";
-import { openEnvelope, openLocalVault, type VaultV1 } from "../lib/crypto/vault";
+import { parsePortableBackup, type PortableBackup } from "../lib/crypto/backup";
+import { retrieveNativeReceipt } from "../lib/native/receipt";
+import { DATA_GATEWAYS } from "../lib/arweave/gateways";
+import { retrieveReceiptEnvelope } from "../lib/solana/receipt";
+import { preservationError, solanaMessages } from "../lib/solana/messages";
+import { MAX_BACKUP_BYTES } from "../lib/crypto/envelope";
+import { openEnvelope, openLocalVault, sealVault, type VaultV1 } from "../lib/crypto/vault";
 import {
   fetchVaultEnvelope,
   formatVersionWhen,
@@ -45,6 +49,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [showFile, setShowFile] = useState(false);
+  const [backup, setBackup] = useState<({ name: string } & Exclude<PortableBackup, { kind: "words" }>) | null>(null);
+  const [nativeGateway, setNativeGateway] = useState("");
   const [phrase, setPhrase] = useState<string | null>(null);
   const [vaultId, setVaultId] = useState<string | null>(null);
   const [picker, setPicker] = useState<PickerItem[] | null>(null);
@@ -54,6 +60,10 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     vault: VaultV1,
     opts: { vaultId: string; headTxId: string | null; mnemonic: string; source: "network" | "local" | "file" }
   ) {
+    if (!vault || vault.schema !== "sejire/vault/v1" || vault.vault_id !== opts.vaultId ||
+        !vault.trees || typeof vault.trees !== "object" || Array.isArray(vault.trees)) {
+      throw new Error(t.restore.badFile);
+    }
     const treeId = vault.active_tree_id;
     const store = coerceTreeStore(treeId ? vault.trees[treeId] : Object.values(vault.trees)[0]);
     if (!store) throw new Error(t.restore.noTrees);
@@ -63,6 +73,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (!ok) return;
     }
     const selfId = pickHomeFocus(store.draft, null);
+    // Preserve every tree in an imported/network vault, not only the active tree
+    // displayed by the editor. A later offline save must retain the full archive.
+    await sealVault(deriveKeysFromMnemonic(opts.mnemonic), vault);
     saveDraftTree(store);
     saveGuide({ ...defaultGuide(), step: "done", selfId });
     setVaultSession(
@@ -74,6 +87,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const normalized = normalizeMnemonic(input);
     if (!isValidMnemonic(normalized)) {
       setError(t.restore.needWords);
@@ -83,6 +97,23 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     setError(null);
     try {
       const keys = deriveKeysFromMnemonic(normalized);
+      if (backup) {
+        const envelope = backup.kind === "receipt"
+          ? await retrieveReceiptEnvelope(backup.receipt, { vaultId: keys.vaultId })
+          : backup.kind === "nativeReceipt" ? await retrieveNativeReceipt(backup.receipt, nativeGateway ? [nativeGateway, ...DATA_GATEWAYS] : [...DATA_GATEWAYS]) : backup.envelope;
+        let vault: VaultV1;
+        try {
+          vault = await openEnvelope(keys, envelope);
+        } catch {
+          throw new Error(t.restore.decryptFail);
+        }
+        await finishWithVault(vault, {
+          vaultId: keys.vaultId,
+          headTxId: backup.kind === "nativeReceipt" ? backup.receipt.transactionId : backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
+          mnemonic: normalized, source: backup.kind !== "vault" ? "network" : "file",
+        });
+        return;
+      }
       setPhrase(normalized);
       setVaultId(keys.vaultId);
       setStatus(t.restore.looking(fingerprintVaultId(keys.vaultId)));
@@ -130,9 +161,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
-        /mismatch|decrypt|JSON/i.test(msg)
+        preservationError(locale, msg) ?? (/mismatch|decrypt|JSON/i.test(msg)
           ? t.restore.decryptFail
-          : msg
+          : msg)
       );
     } finally {
       setBusy(false);
@@ -202,40 +233,22 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   }
 
   async function onFile(file: File) {
+    if (busy) return;
     setBusy(true);
     setError(null);
+    setStatus("");
     try {
-      const raw = JSON.parse(await file.text()) as Record<string, unknown>;
-      const fromSeed = parseSeedBackup(raw);
-      if (fromSeed) {
-        setInput(fromSeed);
+      if (file.size > MAX_BACKUP_BYTES) throw new Error("envelope_too_large");
+      const parsed = parsePortableBackup(await file.text());
+      if (parsed.kind === "words") {
+        setInput(parsed.mnemonic);
         setStatus(t.restore.fileReady);
         return;
       }
-      if (raw.schema !== "sejire/envelope/v1") {
-        setError(t.restore.badFile);
-        return;
-      }
-      const normalized = normalizeMnemonic(input);
-      if (!isValidMnemonic(normalized)) {
-        setError(t.restore.needWords);
-        return;
-      }
-      const keys = deriveKeysFromMnemonic(normalized);
-      const vault = await openEnvelope(keys, raw as EnvelopeV1);
-      await finishWithVault(vault, {
-        vaultId: keys.vaultId,
-        headTxId: null,
-        mnemonic: normalized,
-        source: "file",
-      });
+      setBackup({ name: file.name, ...parsed });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        /mismatch|decrypt|JSON/i.test(msg)
-          ? t.restore.decryptFail
-          : msg
-      );
+      setError(err instanceof Error && err.message === "envelope_too_large"
+        ? t.restore.fileTooLarge : t.restore.badFile);
     } finally {
       setBusy(false);
     }
@@ -341,24 +354,43 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         <h2>{t.restore.title}</h2>
         <p className="sub">{t.restore.hint}</p>
         <textarea
+          aria-label={t.restore.wordsLabel}
           rows={3}
           value={input}
+          disabled={busy}
+          autoComplete="off"
+          spellCheck={false}
           onChange={(e) => setInput(e.target.value)}
           placeholder="word1 word2 … word12"
           required
         />
+        {backup && <div className="sub" role="status">
+          <p style={{ overflowWrap: "anywhere" }}>{backup.kind === "receipt" ? backup.name : t.restore.archiveReady(backup.name)}</p>
+          {backup.kind === "nativeReceipt" && <label>Другой Arweave gateway<input aria-label="Другой Arweave gateway" value={nativeGateway} onChange={e=>setNativeGateway(e.target.value)} /></label>}
+          {backup.kind === "receipt" && <>
+            <p>{solanaMessages[locale].receiptRestore}</p>
+            {backup.receipt.network === "devnet" && <p>{solanaMessages[locale].test}</p>}
+          </>}
+          <button type="button" className="welcome-link-quiet" disabled={busy} onClick={() => {
+            setBackup(null);
+            setError(null);
+            setStatus("");
+          }}>{t.restore.removeFile}</button>
+        </div>}
         <div className="actions">
           <button className="btn ghost" type="button" onClick={onBack}>
             {t.back}
           </button>
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? status || t.restore.searching : t.restore.open}
+            {busy ? (backup ? t.restore.openingFile : status || t.restore.searching) : (backup ? t.restore.openArchive : t.restore.open)}
           </button>
         </div>
         <button
           type="button"
           className="welcome-link-quiet"
           style={{ marginTop: "0.85rem" }}
+          disabled={busy}
+          aria-expanded={showFile}
           onClick={() => setShowFile((v) => !v)}
         >
           {showFile ? t.restore.hideFile : t.restore.openFile}
@@ -369,15 +401,17 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
             <input
               type="file"
               accept="application/json,.json"
+              disabled={busy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
+                e.target.value = "";
                 if (f) void onFile(f);
               }}
             />
           </label>
         ) : null}
         {status && !busy && <p className="sub">{status}</p>}
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
       </form>
     </section>
   );
