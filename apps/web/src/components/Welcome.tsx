@@ -1,6 +1,6 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { NativeCheckoutPanel } from './NativeCheckoutPanel';
-const CheckoutPublishPanel = import.meta.env.VITE_NATIVE_AR_ENABLED === '1' ? NativeCheckoutPanel : lazy(()=>import('./CheckoutPublishPanel').then(m=>({default:m.CheckoutPublishPanel})));
+import { CheckoutPublishPanel } from '@sejire/payment-panels';
 import { checkoutMessages } from '../lib/checkout/messages';
 import { loadDraftTree } from '../lib/draftStorage';
 import { useI18n } from '../lib/i18n/I18nProvider';
@@ -24,7 +24,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
     onStartNew(t.defaultTreeTitle);
   }
   if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
-  if (supportOpen) return <main className="landing"><Suspense fallback={<p role="status">Загрузка…</p>}><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></Suspense></main>;
+  if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
   return <main className="landing">
     <header className="landing-header">
       <span className="landing-brand">SEJIRE<span aria-hidden="true">.</span></span>

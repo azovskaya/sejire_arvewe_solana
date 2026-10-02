@@ -25,7 +25,7 @@ export default defineConfig({
   plugins: [react(), nodePolyfills({ globals: { Buffer: true, global: true, process: true } }), spaFallback404()],
   resolve: {
     // Prefer browser build; node entry breaks Vite CJS default interop (.init).
-    alias: [{ find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
+    alias: [{ find: "@sejire/payment-panels", replacement: resolve(__dirname, process.env.VITE_NATIVE_AR_ENABLED === "1" ? "src/components/paymentPanels.native.ts" : "src/components/paymentPanels.legacy.ts") }, { find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
   },
   optimizeDeps: {
     include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519"],
