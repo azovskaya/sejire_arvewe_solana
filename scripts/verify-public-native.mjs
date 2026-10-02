@@ -11,14 +11,14 @@ for(let i=0;i<24;i++){
  await new Promise(r=>setTimeout(r,5000));
 }
 assert(ready,'Published build provenance was not reachable');
-const browser=await chromium.launch();const errors=[],failed=[],local=[];const contexts=[];
+const browser=await chromium.launch();const errors=[],failed=[],local=[],forbidden=[];const contexts=[];
 try{
  for(let i=0;i<2;i++){
   const context=await browser.newContext({locale:'ru-RU',viewport:i===1?{width:390,height:844}:{width:1280,height:900}});contexts.push(context);const page=await context.newPage();
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('requestfailed',r=>failed.push({url:r.url(),reason:r.failure()?.errorText}));
-  page.on('request',r=>{const u=new URL(r.url());if(['localhost','127.0.0.1','::1'].includes(u.hostname)||u.protocol==='file:')local.push(r.url());});
+  page.on('request',r=>{const u=new URL(r.url());if(/turbo|ardrive|workers\.dev|\/api\/checkout\//.test(u.hostname+u.pathname))forbidden.push(r.url());if(['localhost','127.0.0.1','::1'].includes(u.hostname)||u.protocol==='file:')local.push(r.url());});
   page.on('response',r=>{if(r.status()>=400)failed.push({url:r.url(),status:r.status()});});
   const response=await page.goto(base+'#/admin',{waitUntil:'networkidle'});assert.equal(response.status(),200);
   await page.getByRole('heading',{name:'Центр управления',exact:true}).waitFor();
@@ -44,7 +44,7 @@ try{
   await page.screenshot({path:`.pages-evidence/recovery-${i}.png`,fullPage:true});
   await context.close();
  }
- assert.deepEqual(local,[],'Requests to owner computer');assert.deepEqual(failed,[],'Failed public resources');assert.deepEqual(errors,[],'Browser errors');
- writeFileSync('.pages-evidence/result.json',JSON.stringify({status:'PASS',base,admin:base+'#/admin',sourceCommit:sha,cleanContexts:2,errors,failed,local,fixture:false,walletConnected:false},null,2));
+ assert.deepEqual(local,[],'Requests to owner computer');assert.deepEqual(forbidden,[],'Legacy payment/cloud API requested');assert.deepEqual(failed,[],'Failed public resources');assert.deepEqual(errors,[],'Browser errors');
+ writeFileSync('.pages-evidence/result.json',JSON.stringify({status:'PASS',base,admin:base+'#/admin',sourceCommit:sha,cleanContexts:2,errors,failed,local,forbidden,fixture:false,walletConnected:false},null,2));
  console.log('PASS actual public HTTPS UI: two clean contexts, admin/wallets, 0.03 SOL, reload, recovery screen, no local requests or browser errors. No wallet operations.');
 }finally{await browser.close();}

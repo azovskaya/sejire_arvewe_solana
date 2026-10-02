@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import type { FormEvent } from "react";
 import {
   createMnemonic,
@@ -46,8 +46,8 @@ import {
 import { useI18n } from "../lib/i18n/I18nProvider";
 
 import { NativeCheckoutPanel } from './NativeCheckoutPanel';
-import { CheckoutPublishPanel } from './CheckoutPublishPanel';
-import { SolanaPublishPanel } from "./SolanaPublishPanel";
+const CheckoutPublishPanel = import.meta.env.VITE_NATIVE_AR_ENABLED === '1' ? NativeCheckoutPanel : lazy(()=>import('./CheckoutPublishPanel').then(m=>({default:m.CheckoutPublishPanel})));
+const SolanaPublishPanel = import.meta.env.VITE_NATIVE_AR_ENABLED === '1' ? NativeCheckoutPanel : lazy(()=>import('./SolanaPublishPanel').then(m=>({default:m.SolanaPublishPanel})));
 import { solanaMessages } from "../lib/solana/messages";
 import type { PreservationReceipt } from "../lib/solana/client";
 
@@ -595,11 +595,11 @@ export function PublishSeedModal({
         </p>
 
         {mode === "solana" && sealedEnvelope && (
-          <SolanaSavePanel envelope={sealedEnvelope} parentTxId={publishParentTx}
+          <Suspense fallback={<p role="status">Загрузка экрана сохранения…</p>}><SolanaSavePanel envelope={sealedEnvelope} parentTxId={publishParentTx}
             onAccepted={recordSolana}
             onBusy={(busy) => { solanaBusy.current = busy; }}
             onBack={() => setMode(solanaReturnMode.current)}
-            onDone={finishSolana} />
+            onDone={finishSolana} /></Suspense>
         )}
 
         {mode === "new-version" && (
