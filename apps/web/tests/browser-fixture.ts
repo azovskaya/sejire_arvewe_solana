@@ -9,10 +9,10 @@ export function installWallet() {
   // Public reproducible SOFTWARE signer, never funded or broadcast to a real RPC.
   const signer = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const listeners=new Map<string,Set<()=>void>>();
-  const state = { reject: false, signCount: 0, emit:(event:string)=>listeners.get(event)?.forEach(fn=>fn()) };
+  const state = { reject: false, rejectMessage: false, signCount: 0, emit:(event:string)=>listeners.get(event)?.forEach(fn=>fn()) };
   (window as unknown as { fixtureWallet: typeof state }).fixtureWallet = state;
   (window as unknown as { phantom: unknown }).phantom = { solana: {
-    publicKey: signer.publicKey, connect: async () => {}, on:(event:string,fn:()=>void)=>{if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event)!.add(fn);},removeListener:(event:string,fn:()=>void)=>listeners.get(event)?.delete(fn), signMessage: async (message: Uint8Array) => {if(state.reject)throw Object.assign(new Error('synthetic_wallet_rejection'),{code:4001});return ed25519.sign(message, new Uint8Array(32).fill(17));},
+    publicKey: signer.publicKey, connect: async () => {}, on:(event:string,fn:()=>void)=>{if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event)!.add(fn);},removeListener:(event:string,fn:()=>void)=>listeners.get(event)?.delete(fn), signMessage: async (message: Uint8Array) => {if(state.rejectMessage)throw Object.assign(new Error('synthetic_wallet_rejection'),{code:4001});return ed25519.sign(message, new Uint8Array(32).fill(17));},
     signTransaction: async (tx: import('@solana/web3.js').Transaction) => {
       state.signCount++;
       if (state.reject) throw Object.assign(new Error('synthetic_wallet_rejection'), { code: 4001 });

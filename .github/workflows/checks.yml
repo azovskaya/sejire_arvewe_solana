@@ -40,12 +40,6 @@ jobs:
       - run: npm run checkout:build
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
       - run: npm run test:checkout-browser
-      - name: Preserve checkout failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: checkout-failure-diagnostics
-          path: apps/web/test-results/
       - run: npm run test:protocol-browser
       - name: Native bundle dependency boundary (all dynamic chunks)
         run: node scripts/native-bundle-audit.mjs
@@ -93,3 +87,9 @@ jobs:
       - name: Sponsor test-tool dependency audit (non-blocking; release review required)
         continue-on-error: true
         run: npm audit --prefix apps/sponsor
+      - name: Preserve checkout failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkout-failure-diagnostics
+          path: apps/web/test-results/
